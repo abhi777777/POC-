@@ -23,7 +23,6 @@ export default function Login() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    role: "",
   });
   const [error, setError] = useState("");
 
@@ -71,9 +70,7 @@ export default function Login() {
   };
 
   const isValid =
-    formData.email.trim() !== "" &&
-    formData.password.trim() !== "" &&
-    formData.role.trim() !== "";
+    formData.email.trim() !== "" && formData.password.trim() !== "";
 
   return (
     <ThemeProvider theme={Theme}>
@@ -134,20 +131,6 @@ export default function Login() {
               onChange={handleChange}
               required
             />
-
-            <FormControl fullWidth required>
-              <InputLabel id="role-label">Role</InputLabel>
-              <Select
-                labelId="role-label"
-                label="Role"
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-              >
-                <MenuItem value="consumer">Consumer</MenuItem>
-                <MenuItem value="producer">Producer</MenuItem>
-              </Select>
-            </FormControl>
 
             <Button
               variant="contained"
