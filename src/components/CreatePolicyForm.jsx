@@ -48,7 +48,8 @@ export default function CreatePolicyForm() {
   const handleBack = () => setActiveStep((prev) => prev - 1);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e?.preventDefault) e.preventDefault();
+
     try {
       await axios.post(
         "http://localhost:4000/api/policy/CreatePolicies",
@@ -201,11 +202,15 @@ export default function CreatePolicyForm() {
       <ReviewSection
         open={showReview}
         onClose={() => setShowReview(false)}
-        onConfirm={(e) => {
-          setShowReview(false);
-          handleSubmit(e);
-        }}
         formData={formData}
+        onConfirm={(premium) => {
+          setFormData((prev) => ({
+            ...prev,
+            premium,
+          }));
+          setShowReview(false);
+          handleSubmit();
+        }}
       />
     </Box>
   );

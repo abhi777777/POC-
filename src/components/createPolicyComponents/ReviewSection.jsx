@@ -12,7 +12,6 @@ import {
 } from "@mui/material";
 
 export default function ReviewSection({ open, onClose, onConfirm, formData }) {
-  // Extract values from original state keys
   const baseCoverage = Number(formData.coverageAmount) || 0;
   const tenure = Number(formData.tenure) || 0;
   const medicalCount = Array.isArray(formData.medicalHistory)
@@ -77,7 +76,7 @@ export default function ReviewSection({ open, onClose, onConfirm, formData }) {
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Close</Button>
-        <Button onClick={onConfirm} variant="contained">
+        <Button onClick={() => onConfirm(premiumToPay)} variant="contained">
           Proceed
         </Button>
       </DialogActions>

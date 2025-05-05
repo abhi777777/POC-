@@ -58,7 +58,7 @@ const NomineeSection = ({ formData, setFormData, setStepValid }) => {
         nominee.contribution?.trim()
     );
     setStepValid(isNomineesValid);
-  }, [formData.nominees, setStepValid]);
+  }, [formData.nominees]);
 
   return (
     <>

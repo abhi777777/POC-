@@ -28,7 +28,7 @@ const BMISection = ({ formData, setFormData, setStepValid }) => {
         heightInches: inches,
       }));
     }
-  }, [unit, formData.heightCm, setFormData]);
+  }, [unit, formData.heightCm]);
 
   // Sync ft/in → cm
   useEffect(() => {
@@ -40,7 +40,7 @@ const BMISection = ({ formData, setFormData, setStepValid }) => {
         heightCm: Math.round(totalInches * 2.54),
       }));
     }
-  }, [unit, formData.heightFt, formData.heightInches, setFormData]);
+  }, [unit, formData.heightFt, formData.heightInches]);
 
   // Auto-calc BMI
   useEffect(() => {
@@ -63,7 +63,6 @@ const BMISection = ({ formData, setFormData, setStepValid }) => {
     formData.heightFt,
     formData.heightInches,
     formData.weight,
-    setFormData,
   ]);
 
   // Step validation
@@ -87,7 +86,6 @@ const BMISection = ({ formData, setFormData, setStepValid }) => {
     formData.heightInches,
     formData.bmi,
     unit,
-    setStepValid,
   ]);
 
   const handleChange = (e) => {
