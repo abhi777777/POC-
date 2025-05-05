@@ -1,81 +1,130 @@
-// src/components/CreatePolicyForm/index.jsx
 import React, { useState } from "react";
 import axios from "axios";
-import { Box, Typography, Button } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  Stepper,
+  Step,
+  StepLabel,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import { initialState } from "./createPolicyComponents/formState";
-
 import BasicDetailsSection from "./createPolicyComponents/BasicDetailsSection";
-import BMIDetailsSection from "./createPolicyComponents/BMIDetailsSection";
+import Summing from "./createPolicyComponents/Summing";
+import BMISection from "./createPolicyComponents/BMISection.jsx";
 import LifestyleSection from "./createPolicyComponents/LifestyleSection";
 import MedicalHistorySection from "./createPolicyComponents/MedicalHistorySection";
-import NomineesSection from "./createPolicyComponents/NomineesSection";
+import NomineeSection from "./createPolicyComponents/NomineeSection";
 import AdditionalInfoSection from "./createPolicyComponents/AdditionalInfoSection";
+import ReviewSection from "./createPolicyComponents/ReviewSection";
+
+const steps = [
+  "Basic Details",
+  "Summing",
+  "BMI Details",
+  "Lifestyle",
+  "Medical History",
+  "Nominees",
+  "Additional Info",
+  "Review & Confirm",
+];
 
 export default function CreatePolicyForm() {
-  // Ensure initialState is properly imported and used
-  const [formData, setFormData] = useState(
-    initialState || {
-      title: "",
-      policyTitle: "",
-      firstName: "",
-      lastName: "",
-      email: "",
-      // Include other default values as fallback
-      nominees: [{ name: "", relation: "", gender: "", contribution: "" }],
-      lifestyle: {
-        smoking: { freq: "", quantity: "" },
-        drinking: { freq: "", quantity: "" },
-        panMasala: { freq: "", quantity: "" },
-        others: "",
-      },
-      additional: { pan: "", aadhar: "", gstNumber: "" },
-    }
-  );
+  const [activeStep, setActiveStep] = useState(0);
+  const [formData, setFormData] = useState(initialState);
   const [errors, setErrors] = useState({});
+  const [stepsValid, setStepsValid] = useState(Array(steps.length).fill(false));
+  const [showReview, setShowReview] = useState(false);
 
-  const validateForm = () => {
-    let newErrors = {};
-    const { firstName, middleName, lastName, email, mobile } = formData;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-    // Validate First Name, Middle Name, Last Name
-    const nameRegex = /^[A-Za-z]+$/;
-    if (!nameRegex.test(firstName))
-      newErrors.firstName = "First Name can't contain numbers";
-    if (middleName && !nameRegex.test(middleName))
-      newErrors.middleName = "Middle Name can't contain numbers";
-    if (!nameRegex.test(lastName))
-      newErrors.lastName = "Last Name can't contain numbers";
-
-    // Validate email
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-    if (!emailRegex.test(email)) newErrors.email = "Invalid email format";
-
-    // Validate mobile
-    const mobileRegex = /^[0-9]{10}$/;
-    if (!mobileRegex.test(mobile)) newErrors.mobile = "Invalid mobile number";
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const handleNext = () => setActiveStep((prev) => prev + 1);
+  const handleBack = () => setActiveStep((prev) => prev - 1);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
-
     try {
       await axios.post(
         "http://localhost:4000/api/policy/CreatePolicies",
-        formData,
+        {
+          ...formData,
+          medicalHistory: Array.isArray(formData.medicalHistory)
+            ? formData.medicalHistory.join("; ")
+            : formData.medicalHistory,
+        },
         { withCredentials: true }
       );
-      alert("Policy created successfully!");
+      toast.success("Policy created successfully!");
       setFormData(initialState);
+      setActiveStep(0);
+      setStepsValid(Array(steps.length).fill(false));
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.error || "Error creating policy");
+      toast.error(err.response?.data?.error || "Error creating policy");
     }
   };
+
+  const updateStepValid = (index, valid) =>
+    setStepsValid((prev) => {
+      const copy = [...prev];
+      copy[index] = valid;
+      return copy;
+    });
+
+  const sections = [
+    <BasicDetailsSection
+      key="basic"
+      formData={formData}
+      setFormData={setFormData}
+      errors={errors}
+      setErrors={setErrors}
+      setStepValid={(valid) => updateStepValid(0, valid)}
+    />,
+    <Summing
+      key="summing"
+      formData={formData}
+      setFormData={setFormData}
+      setStepValid={(valid) => updateStepValid(1, valid)}
+    />,
+    <BMISection
+      key="bmi"
+      formData={formData}
+      setFormData={setFormData}
+      setStepValid={(valid) => updateStepValid(2, valid)}
+    />,
+    <LifestyleSection
+      key="lifestyle"
+      formData={formData}
+      setFormData={setFormData}
+      setStepValid={(valid) => updateStepValid(3, valid)}
+    />,
+    <MedicalHistorySection
+      key="medical"
+      formData={formData}
+      setFormData={setFormData}
+      setStepValid={(valid) => updateStepValid(4, valid)}
+    />,
+    <NomineeSection
+      key="nominees"
+      formData={formData}
+      setFormData={setFormData}
+      setStepValid={(valid) => updateStepValid(5, valid)}
+    />,
+    <AdditionalInfoSection
+      key="additional"
+      formData={formData}
+      setFormData={setFormData}
+      setStepValid={(valid) => updateStepValid(6, valid)}
+    />,
+    // Placeholder for review step (actual content is in the modal)
+    <Box key="review" />,
+  ];
 
   return (
     <Box
@@ -84,32 +133,80 @@ export default function CreatePolicyForm() {
       sx={{
         display: "flex",
         flexDirection: "column",
-        gap: 4,
-        maxWidth: 900,
+        gap: 3,
+        maxWidth: isMobile ? "95%" : 900,
         mx: "auto",
+        padding: isMobile ? 2 : 3,
       }}
     >
-      <Typography variant="h6">Create New Policy</Typography>
+      <Typography variant="h6" align="center" gutterBottom>
+        Create New Policy
+      </Typography>
 
-      <BasicDetailsSection
+      <Stepper
+        activeStep={activeStep}
+        alternativeLabel={!isMobile}
+        orientation={isMobile ? "vertical" : "horizontal"}
+        sx={{ mb: 2 }}
+      >
+        {steps.map((label) => (
+          <Step key={label}>
+            <StepLabel>{label}</StepLabel>
+          </Step>
+        ))}
+      </Stepper>
+
+      <Box sx={{ mb: 2 }}>{sections[activeStep]}</Box>
+
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          mt: 2,
+          flexDirection: isMobile ? "column-reverse" : "row",
+          gap: isMobile ? 1 : 0,
+        }}
+      >
+        <Button
+          type="button"
+          disabled={activeStep === 0}
+          onClick={handleBack}
+          sx={{ width: isMobile ? "100%" : "auto" }}
+        >
+          Back
+        </Button>
+
+        {activeStep < steps.length - 1 ? (
+          <Button
+            onClick={handleNext}
+            variant="contained"
+            disabled={!stepsValid[activeStep]}
+            sx={{ width: isMobile ? "100%" : "auto" }}
+          >
+            Next
+          </Button>
+        ) : (
+          <Button
+            onClick={() => setShowReview(true)}
+            variant="contained"
+            sx={{ width: isMobile ? "100%" : "auto" }}
+          >
+            Review & Submit
+          </Button>
+        )}
+      </Box>
+
+      <ToastContainer position="bottom-right" />
+
+      <ReviewSection
+        open={showReview}
+        onClose={() => setShowReview(false)}
+        onConfirm={(e) => {
+          setShowReview(false);
+          handleSubmit(e);
+        }}
         formData={formData}
-        setFormData={setFormData}
-        errors={errors}
       />
-
-      <BMIDetailsSection formData={formData} setFormData={setFormData} />
-
-      <LifestyleSection formData={formData} setFormData={setFormData} />
-
-      <MedicalHistorySection formData={formData} setFormData={setFormData} />
-
-      <NomineesSection formData={formData} setFormData={setFormData} />
-
-      <AdditionalInfoSection formData={formData} setFormData={setFormData} />
-
-      <Button type="submit" variant="contained" color="primary">
-        Submit
-      </Button>
     </Box>
   );
 }

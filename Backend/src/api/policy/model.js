@@ -14,7 +14,6 @@ const policySchema = new mongoose.Schema(
   {
     // Basic Details
     title: { type: String, required: true },
-    policyTitle: { type: String, required: true },
     firstName: { type: String, required: true },
     middleName: { type: String },
     lastName: { type: String, required: true },
@@ -26,6 +25,11 @@ const policySchema = new mongoose.Schema(
     income: { type: Number, required: true },
     gender: { type: String, required: true },
 
+    // Summing
+    coverageAmount: { type: Number, required: true },
+    tenure: { type: Number, required: true },
+    premium: { type: Number, required: true },
+
     // BMI Section
     heightCm: { type: Number, required: true },
     heightFt: { type: Number, required: true },
@@ -36,20 +40,20 @@ const policySchema = new mongoose.Schema(
     // Lifestyle Section
     lifestyle: {
       smoking: {
-        freq: { type: Number, default: 0 },
+        freq: { type: String, default: 0 },
         quantity: { type: Number, default: 0 },
       },
       drinking: {
-        freq: { type: Number, default: 0 },
+        freq: { type: String, default: 0 },
         quantity: { type: Number, default: 0 },
       },
       panMasala: {
-        freq: { type: Number, default: 0 },
+        freq: { type: String, default: 0 },
         quantity: { type: Number, default: 0 },
       },
       others: { type: String, default: "" },
     },
-    medicalHistory: { type: String },
+    medicalHistory: { type: [String], default: ["null"] },
 
     // Nominees
     nominees: {
@@ -68,11 +72,10 @@ const policySchema = new mongoose.Schema(
       required: true,
     },
 
-    // Additional Details
     additional: {
-      pan: { type: String },
-      aadhar: { type: String },
-      gstNumber: { type: String },
+      pan: { type: String, required: true },
+      aadhar: { type: String, required: true },
+      gstNumber: { type: String, required: true },
     },
 
     // Reference to the producer who created this policy

@@ -3,7 +3,6 @@
 // Initial state for the form
 export const initialState = {
   title: "",
-  policyTitle: "",
   firstName: "",
   middleName: "",
   lastName: "",
@@ -19,13 +18,16 @@ export const initialState = {
   heightInches: "",
   weight: "",
   bmi: "",
+  coverageAmount: "",
+  tenure: "",
+  premium: "",
   lifestyle: {
     smoking: { freq: "", quantity: "" },
     drinking: { freq: "", quantity: "" },
     panMasala: { freq: "", quantity: "" },
     others: "",
   },
-  medicalHistory: "",
+  medicalHistory: [""],
   nominees: [{ name: "", relation: "", gender: "", contribution: "" }],
   additional: { pan: "", aadhar: "", gstNumber: "" },
 };
