@@ -7,10 +7,6 @@ import {
   Button,
   Typography,
   Link,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
   Avatar,
   Fade,
@@ -35,12 +31,14 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(""); // Clear any previous errors
+
     try {
       const res = await axios.post(
         "http://localhost:4000/api/users/login",
         {
-          email: formData.email,
-          password: formData.password,
+          email: formData.email.trim(),
+          password: formData.password.trim(),
         },
         {
           withCredentials: true,
@@ -56,16 +54,18 @@ export default function Login() {
         case "consumer":
           navigate("/ConsumerDashBoard");
           break;
-
         default:
           console.error("Unknown role");
+          setError("Unexpected user role");
       }
     } catch (err) {
       console.error("Login failed", err);
+      setError("Invalid email or password");
     }
   };
 
   const handleSignup = () => {
+    setFormData({ email: "", password: "" });
     navigate("/signup");
   };
 
@@ -87,6 +87,7 @@ export default function Login() {
           <Box
             component="form"
             onSubmit={handleSubmit}
+            autoComplete="off"
             sx={{
               width: 400,
               bgcolor: "background.paper",
@@ -116,6 +117,7 @@ export default function Login() {
               label="Email"
               name="email"
               type="email"
+              autoComplete="off"
               fullWidth
               value={formData.email}
               onChange={handleChange}
@@ -126,6 +128,7 @@ export default function Login() {
               label="Password"
               name="password"
               type="password"
+              autoComplete="off"
               fullWidth
               value={formData.password}
               onChange={handleChange}

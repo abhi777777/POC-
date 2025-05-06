@@ -2,7 +2,6 @@
 
 // Initial state for the form
 export const initialState = {
-  title: "",
   firstName: "",
   middleName: "",
   lastName: "",

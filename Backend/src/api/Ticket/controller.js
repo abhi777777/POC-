@@ -261,8 +261,8 @@ exports.raiseticket = async (req, res) => {
 exports.verifyTicket = async (req, res) => {
   console.log("[verifyTicket] body:", req.body);
 
-  const { pendingTicketId, email, otp } = req.body;
-  if (!pendingTicketId || !email || !otp) {
+  const { pendingTicketId, otp } = req.body;
+  if (!pendingTicketId || !otp) {
     console.warn("[verifyTicket] missing fields");
     return res.status(400).json({ error: "Missing required fields." });
   }
@@ -301,11 +301,11 @@ exports.verifyTicket = async (req, res) => {
     return res.status(400).json({ error: "OTP has expired." });
   }
 
-  // Validate email & OTP
-  if (pendingTicket.email !== email || pendingTicket.otp !== otp) {
+  // Validate OTP (email is already trusted from DB)
+  if (pendingTicket.otp !== otp) {
     console.warn("[verifyTicket] OTP mismatch", {
-      expected: { email: pendingTicket.email, otp: pendingTicket.otp },
-      actual: { email, otp },
+      expected: pendingTicket.otp,
+      actual: otp,
     });
     return res.status(400).json({
       error: "OTP verification failed.",

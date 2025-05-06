@@ -11,21 +11,19 @@ import {
   Button,
   Typography,
   CircularProgress,
-  Snackbar,
-  Alert,
   Box,
+  Pagination,
 } from "@mui/material";
 import { Policy as PolicyIcon } from "@mui/icons-material";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css"; // Make sure to import the Toastify styles
 
 export default function AvailablePolicies() {
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(null);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
 
   useEffect(() => {
     const fetchPolicies = async () => {
@@ -39,11 +37,7 @@ export default function AvailablePolicies() {
         setPolicies(res.data.policies || []);
       } catch (err) {
         console.error(err);
-        setSnackbar({
-          open: true,
-          message: "Failed to fetch policies",
-          severity: "error",
-        });
+        toast.error("Failed to fetch policies");
       } finally {
         setLoading(false);
       }
@@ -60,24 +54,25 @@ export default function AvailablePolicies() {
         { policyId },
         { withCredentials: true }
       );
-      setSnackbar({
-        open: true,
-        message: response.data.message || "Policy purchased successfully!",
-        severity: "success",
-      });
+      toast.success(response.data.message || "Policy purchased successfully!");
       // Optionally refetch policies
       setPolicies((prev) => prev.filter((p) => p._id !== policyId));
     } catch (error) {
       console.error(error);
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.error || "Failed to buy policy",
-        severity: "error",
-      });
+      toast.error(error.response?.data?.error || "Failed to buy policy");
     } finally {
       setBuying(null);
     }
   };
+
+  const handleChangePage = (event, value) => {
+    setPage(value);
+  };
+
+  const paginatedPolicies = policies.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
 
   return (
     <Paper elevation={3} sx={{ p: 4, m: 4 }}>
@@ -95,71 +90,72 @@ export default function AvailablePolicies() {
           <Typography variant="h6">No available policies found</Typography>
         </Box>
       ) : (
-        <TableContainer component={Paper} elevation={1}>
-          <Table>
-            <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
-              <TableRow>
-                <TableCell>
-                  <strong>Title</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Email</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Mobile</strong>
-                </TableCell>
-                <TableCell align="center">
-                  <strong>Action</strong>
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {policies.map((policy, index) => (
-                <TableRow
-                  key={policy._id}
-                  sx={{
-                    backgroundColor: index % 2 === 0 ? "#fafafa" : "white",
-                  }}
-                >
-                  <TableCell>{policy.policyTitle}</TableCell>
-                  <TableCell>{policy.email}</TableCell>
-                  <TableCell>{policy.mobile}</TableCell>
+        <>
+          <TableContainer component={Paper} elevation={1}>
+            <Table>
+              <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
+                <TableRow>
+                  <TableCell>
+                    <strong>Email</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Coverage Amount</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Tenure</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Mobile</strong>
+                  </TableCell>
                   <TableCell align="center">
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      disabled={buying === policy._id}
-                      onClick={() => handleBuyPolicy(policy._id)}
-                      sx={{ minWidth: 120 }}
-                    >
-                      {buying === policy._id ? (
-                        <CircularProgress size={20} color="inherit" />
-                      ) : (
-                        "Buy"
-                      )}
-                    </Button>
+                    <strong>Action</strong>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+              </TableHead>
+              <TableBody>
+                {paginatedPolicies.map((policy, index) => (
+                  <TableRow
+                    key={policy._id}
+                    sx={{
+                      backgroundColor: index % 2 === 0 ? "#fafafa" : "white",
+                    }}
+                  >
+                    <TableCell>{policy.email}</TableCell>
+                    <TableCell>{policy.coverageAmount}</TableCell>
+                    <TableCell>{policy.tenure}</TableCell>
+                    <TableCell>{policy.mobile}</TableCell>
+                    <TableCell align="center">
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        disabled={buying === policy._id}
+                        onClick={() => handleBuyPolicy(policy._id)}
+                        sx={{ minWidth: 120 }}
+                      >
+                        {buying === policy._id ? (
+                          <CircularProgress size={20} color="inherit" />
+                        ) : (
+                          `Buy - ₹${policy.premium}`
+                        )}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+          {/* Pagination */}
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+            <Pagination
+              count={Math.ceil(policies.length / pageSize)}
+              page={page}
+              onChange={handleChangePage}
+              color="primary"
+            />
+          </Box>
+        </>
+      )}
     </Paper>
   );
 }

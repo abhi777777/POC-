@@ -14,21 +14,45 @@ import {
 
 const LifestyleSection = ({ formData, setFormData, setStepValid }) => {
   const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm")); // true on xs screens
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
   const handleLifestyleChange = (section, field) => (e) => {
     const { value } = e.target;
-    if (!field) {
+    setFormData((prev) => ({
+      ...prev,
+      lifestyle: {
+        ...prev.lifestyle,
+        [section]: {
+          ...prev.lifestyle[section],
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  const handleYesNoChange = (section) => (e) => {
+    const value = e.target.value;
+    if (value === "no") {
       setFormData((prev) => ({
         ...prev,
-        lifestyle: { ...prev.lifestyle, [section]: value },
+        lifestyle: {
+          ...prev.lifestyle,
+          [section]: {
+            freq: "",
+            quantity: "",
+            uses: "no",
+          },
+        },
       }));
     } else {
       setFormData((prev) => ({
         ...prev,
         lifestyle: {
           ...prev.lifestyle,
-          [section]: { ...prev.lifestyle[section], [field]: value },
+          [section]: {
+            ...prev.lifestyle[section],
+            uses: "yes",
+          },
         },
       }));
     }
@@ -43,8 +67,8 @@ const LifestyleSection = ({ formData, setFormData, setStepValid }) => {
   useEffect(() => {
     const isEveryItemValid = lifestyleItems.every(({ key }) => {
       const item = formData.lifestyle[key];
-      if (!item?.freq && !item?.quantity) return true;
-      return item?.freq && item?.quantity;
+      if (!item || item.uses === "no") return true;
+      return item.uses === "yes" && item.freq && item.quantity;
     });
 
     const isOtherHabitsValid =
@@ -55,57 +79,91 @@ const LifestyleSection = ({ formData, setFormData, setStepValid }) => {
 
   return (
     <>
-      <Typography variant="subtitle1" sx={{ mb: 2 }}>
+      <Typography variant="h6" sx={{ mb: 3 }}>
         Lifestyle
       </Typography>
-      {lifestyleItems.map(({ key, label }) => (
-        <Grid container spacing={2} key={key} sx={{ mb: 2 }}>
-          <Grid item xs={12} sm={6}>
-            <FormControl component="fieldset" fullWidth>
-              <FormLabel>
-                {isSmallScreen ? label : `${label} Frequency`}
-              </FormLabel>
-              <RadioGroup
-                row={!isSmallScreen}
-                name={`${key}-freq`}
-                value={formData.lifestyle[key]?.freq || ""}
-                onChange={handleLifestyleChange(key, "freq")}
-              >
-                <FormControlLabel
-                  value="daily"
-                  control={<Radio />}
-                  label="Daily"
-                />
-                <FormControlLabel
-                  value="weekly"
-                  control={<Radio />}
-                  label="Weekly"
-                />
-              </RadioGroup>
-            </FormControl>
-          </Grid>
 
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label={isSmallScreen ? "Qty" : `${label} Quantity`}
-              value={formData.lifestyle[key]?.quantity || ""}
-              onChange={handleLifestyleChange(key, "quantity")}
-              type="number"
-              fullWidth
-            />
-          </Grid>
-        </Grid>
-      ))}
+      {lifestyleItems.map(({ key, label }) => {
+        const item = formData.lifestyle[key] || {};
+        return (
+          <Grid container spacing={2} key={key} sx={{ mb: 3 }}>
+            <Grid item xs={12}>
+              <FormControl component="fieldset">
+                <FormLabel>
+                  {`Do you ${label === "Smoking" ? "smoke" : label === "Drinking" ? "drink" : label === "Pan Masala" ? "consume pan masala" : label.toLowerCase()}?`}
+                </FormLabel>
 
+                <RadioGroup
+                  row
+                  name={`${key}-uses`}
+                  value={item.uses || ""}
+                  onChange={handleYesNoChange(key)}
+                >
+                  <FormControlLabel
+                    value="yes"
+                    control={<Radio />}
+                    label="Yes"
+                  />
+                  <FormControlLabel value="no" control={<Radio />} label="No" />
+                </RadioGroup>
+              </FormControl>
+            </Grid>
+
+            {item.uses === "yes" && (
+              <>
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <FormLabel>
+                      {isSmallScreen ? "Frequency" : `${label} Frequency`}
+                    </FormLabel>
+                    <RadioGroup
+                      row={!isSmallScreen}
+                      name={`${key}-freq`}
+                      value={item.freq || ""}
+                      onChange={handleLifestyleChange(key, "freq")}
+                    >
+                      {["daily", "weekly"].map((option) => (
+                        <FormControlLabel
+                          key={option}
+                          value={option}
+                          control={<Radio />}
+                          label={
+                            option.charAt(0).toUpperCase() + option.slice(1)
+                          }
+                        />
+                      ))}
+                    </RadioGroup>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label={isSmallScreen ? "Quantity" : `${label} Quantity`}
+                    value={item.quantity || ""}
+                    onChange={handleLifestyleChange(key, "quantity")}
+                    type="number"
+                    fullWidth
+                  />
+                </Grid>
+              </>
+            )}
+          </Grid>
+        );
+      })}
+
+      {/* Other Habits Section */}
       <Grid container spacing={2}>
         <Grid item xs={12}>
           <TextField
-            label={
-              isSmallScreen ? "Other Habits" : "Other Lifestyle Habits (if any)"
-            }
+            label={isSmallScreen ? "Other Habits" : "Any other"}
             value={formData.lifestyle.others || ""}
-            onChange={handleLifestyleChange("others")}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                lifestyle: { ...prev.lifestyle, others: e.target.value },
+              }))
+            }
             fullWidth
+            sx={{ width: "100%" }}
           />
         </Grid>
       </Grid>

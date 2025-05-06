@@ -1,4 +1,5 @@
-import React, { useMemo } from "react";
+// src/createPolicyComponents/ReviewSection.jsx
+import React from "react";
 import {
   Dialog,
   DialogTitle,
@@ -12,72 +13,36 @@ import {
 } from "@mui/material";
 
 export default function ReviewSection({ open, onClose, onConfirm, formData }) {
-  const baseCoverage = Number(formData.coverageAmount) || 0;
-  const tenure = Number(formData.tenure) || 0;
-  const medicalCount = Array.isArray(formData.medicalHistory)
-    ? formData.medicalHistory.filter((item) => item).length
-    : 0;
+  const { coverageAmount, tenure, medicalHistory, lifestyle, premium } =
+    formData;
 
-  // Count lifestyle issues: smoking, drinking, panMasala, others
-  const lifestyleObj = formData.lifestyle || {};
-  const lifestyleCount = ["smoking", "drinking", "panMasala", "others"].reduce(
-    (count, key) => {
-      const entry = lifestyleObj[key];
-      if (key === "others") {
-        return count + (entry ? 1 : 0);
-      }
-      return count + (entry.freq || entry.quantity ? 1 : 0);
-    },
-    0
-  );
-
-  // Compute discount based on tenure
-  const discountPercent = useMemo(() => {
-    if (tenure === 3) return 10;
-    if (tenure === 2) return 5;
-    return 0;
-  }, [tenure]);
-
-  // Extra charges
-  const extraMedical = medicalCount * 750;
-  const extraLifestyle = lifestyleCount * 750;
-
-  // Final premium calculation
-  const premiumToPay = useMemo(() => {
-    const discounted = baseCoverage * (1 - discountPercent / 100);
-    return Math.round(discounted + extraMedical + extraLifestyle);
-  }, [baseCoverage, discountPercent, extraMedical, extraLifestyle]);
+  const baseCoverage = Number(coverageAmount) || 0;
+  const tenureDiscount = tenure === 3 ? 10 : tenure === 2 ? 5 : 0;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Premium Summary</DialogTitle>
-      <Divider />
-      <DialogContent dividers>
-        <Paper sx={{ p: 3 }}>
-          <Box sx={{ mb: 1 }}>
-            <Typography>
-              Base Coverage: ₹{baseCoverage.toLocaleString()}
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>Review Policy Details</DialogTitle>
+      <DialogContent>
+        <Paper sx={{ p: 2 }}>
+          <Box mb={2}>
+            <Typography variant="h6">
+              Coverage Amount: ₹{baseCoverage}
             </Typography>
-            <Typography>Tenure Discount: {discountPercent}%</Typography>
-            <Typography>
-              Medical Issue Charges ({medicalCount}): ₹
-              {extraMedical.toLocaleString()}
+            <Typography variant="body1">Tenure: {tenure} Years</Typography>
+            <Typography variant="body1">
+              Discount: {tenureDiscount}% off
             </Typography>
-            <Typography>
-              Lifestyle Issue Charges ({lifestyleCount}): ₹
-              {extraLifestyle.toLocaleString()}
-            </Typography>
+            <Typography variant="h6">Total Premium: ₹{premium}</Typography>
           </Box>
-          <Divider sx={{ my: 2 }} />
-          <Typography variant="h6" align="center">
-            Total Premium to Pay: ₹{premiumToPay.toLocaleString()}
-          </Typography>
+          <Divider sx={{ mb: 2 }} />
         </Paper>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Close</Button>
-        <Button onClick={() => onConfirm(premiumToPay)} variant="contained">
-          Proceed
+        <Button onClick={onClose} color="secondary">
+          Close
+        </Button>
+        <Button onClick={onConfirm} variant="contained">
+          Confirm
         </Button>
       </DialogActions>
     </Dialog>

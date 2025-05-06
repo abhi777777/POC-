@@ -40,20 +40,46 @@ export default function Summing({
 
   React.useEffect(validateFields, [formData.coverageAmount, formData.tenure]);
 
+  // Calculate discount
+  const getDiscount = () => {
+    if (formData.tenure === 2) return 5;
+    if (formData.tenure === 3) return 10;
+    return 0;
+  };
+
+  const discount = getDiscount();
+
   return (
-    <Box sx={{ p: 2 }}>
+    <Box sx={{ p: isSmallScreen ? 1 : 2 }}>
       <Typography
-        variant={isSmallScreen ? "subtitle1" : "h6"}
+        variant={isSmallScreen ? "subtitle2" : "h6"}
         align="center"
         gutterBottom
-        sx={{ mb: 3 }}
+        sx={{ mb: isSmallScreen ? 1 : 2 }}
       >
-        Policy Summary
+        DECIDE YOUR COVERAGE AND TENURE
       </Typography>
 
-      <Grid container spacing={3} direction="column">
+      {/* Static discount note always visible */}
+      <Typography
+        variant="caption"
+        align="center"
+        display="block"
+        sx={{ mb: isSmallScreen ? 2 : 3, color: "text.secondary" }}
+      >
+        Enjoy up to 10% off: 5% on 2‑year plans and 10% on 3‑year plans.
+      </Typography>
+
+      <Grid container spacing={isSmallScreen ? 2 : 3} direction="column">
         <Grid item xs={12}>
-          <Typography variant="body1" gutterBottom sx={{ fontWeight: 500 }}>
+          <Typography
+            variant="body1"
+            gutterBottom
+            sx={{
+              fontWeight: 500,
+              fontSize: isSmallScreen ? "0.9rem" : "1rem",
+            }}
+          >
             Coverage Amount (₹)
           </Typography>
           <TextField
@@ -69,31 +95,89 @@ export default function Summing({
         </Grid>
 
         <Grid item xs={12}>
-          <Typography variant="body1" gutterBottom sx={{ fontWeight: 500 }}>
+          <Typography
+            variant="body1"
+            gutterBottom
+            sx={{
+              fontWeight: 500,
+              fontSize: isSmallScreen ? "0.9rem" : "1rem",
+            }}
+          >
             Policy Tenure
           </Typography>
           <FormControl fullWidth variant="outlined">
             <Select
-              value={formData.tenure || "Tenure"}
+              value={formData.tenure || ""}
               onChange={handleChange("tenure")}
               displayEmpty
+              sx={{ fontSize: isSmallScreen ? "0.9rem" : "1rem" }}
             >
               <MenuItem value={1}>1 Year</MenuItem>
-              <MenuItem value={2}>2 Years</MenuItem>
-              <MenuItem value={3}>3 Years</MenuItem>
+              <MenuItem value={2}>
+                2 Years{" "}
+                {discount === 5 && (
+                  <Typography
+                    component="span"
+                    sx={{ color: "green", fontWeight: 500 }}
+                  >
+                    - {discount}% off
+                  </Typography>
+                )}
+              </MenuItem>
+              <MenuItem value={3}>
+                3 Years{" "}
+                {discount === 10 && (
+                  <Typography
+                    component="span"
+                    sx={{ color: "green", fontWeight: 500 }}
+                  >
+                    - {discount}% off
+                  </Typography>
+                )}
+              </MenuItem>
             </Select>
           </FormControl>
         </Grid>
 
-        <Grid item xs={12} sx={{ mt: 2 }}>
+        {discount > 0 && (
+          <>
+            <Grid item xs={12}>
+              <Typography
+                variant="subtitle2"
+                align="center"
+                sx={{ color: "green", fontWeight: 500 }}
+              >
+                Congratulations! You get a {discount}% discount on your premium.
+              </Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography
+                variant="caption"
+                align="center"
+                sx={{ color: "text.secondary" }}
+              >
+                Note: Discounts are applied automatically at checkout and cannot
+                be combined with other promotions.
+              </Typography>
+            </Grid>
+          </>
+        )}
+
+        <Grid item xs={12} sx={{ mt: isSmallScreen ? 1 : 2 }}>
           <Box
             sx={{
               display: "flex",
+              flexDirection: isSmallScreen ? "column" : "row",
               justifyContent: "space-between",
             }}
           >
             {onBack && (
-              <Button variant="outlined" onClick={onBack} sx={{ mr: 1 }}>
+              <Button
+                variant="outlined"
+                onClick={onBack}
+                sx={{ mr: isSmallScreen ? 0 : 1, mb: isSmallScreen ? 1 : 0 }}
+                fullWidth={isSmallScreen}
+              >
                 Back
               </Button>
             )}
@@ -102,7 +186,8 @@ export default function Summing({
                 variant="contained"
                 onClick={onNext}
                 disabled={!stepValid}
-                sx={{ ml: "auto" }}
+                sx={{ ml: isSmallScreen ? 0 : "auto" }}
+                fullWidth={isSmallScreen}
               >
                 Next
               </Button>

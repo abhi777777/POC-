@@ -14,11 +14,13 @@ function generatePDFReceipt(user, purchase) {
       doc.moveDown();
       doc.fontSize(12).text(`Date: ${new Date().toLocaleDateString()}`);
       doc.moveDown();
-      doc.text(`Policy Name: ${user.policyTitle}`);
       doc.text(`Name: ${user.firstName} ${user.lastName}`);
       doc.text(`Phone: ${user.mobile}`);
       doc.text(`Address: ${user.address}`);
       doc.text(`Email: ${user.email}`);
+      doc.text(`Coverage Amount: ${user.coverageAmount}`);
+      doc.text(`Tenure: ${user.tenure}`);
+      doc.text(`Premium: ${user.premium}`);
       doc.moveDown();
       doc.text("Your Purchase was succesfull");
       doc.end();

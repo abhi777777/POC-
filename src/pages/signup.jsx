@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import {
   ThemeProvider,
@@ -11,11 +11,12 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Alert,
   Avatar,
   Fade,
 } from "@mui/material";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Theme from "../theme/Theme";
 
 export default function Signup() {
@@ -33,7 +34,6 @@ export default function Signup() {
   });
 
   const [errors, setErrors] = useState({});
-  const [submitError, setSubmitError] = useState("");
   const navigate = useNavigate();
 
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -97,12 +97,12 @@ export default function Signup() {
 
     try {
       await axios.post("http://localhost:4000/api/users/register", payload);
-      alert("Signup successful!");
-      navigate("/login");
+      toast.success("Signup successful!");
+      setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
       const message =
         err.response?.data?.error || "Something went wrong during signup";
-      setSubmitError(message);
+      toast.error(message);
     }
   };
 
@@ -142,6 +142,7 @@ export default function Signup() {
               textAlign: "center",
             }}
           >
+            <ToastContainer />
             <Avatar sx={{ bgcolor: "primary.main", mx: "auto" }}>
               <PersonAddIcon />
             </Avatar>
@@ -152,8 +153,6 @@ export default function Signup() {
             <Typography variant="body2" color="text.secondary">
               Please fill the details to sign up
             </Typography>
-
-            {submitError && <Alert severity="error">{submitError}</Alert>}
 
             <TextField
               label="First Name"
@@ -273,6 +272,16 @@ export default function Signup() {
             >
               Sign Up
             </Button>
+
+            <Typography variant="body2">
+              Already have an account?{" "}
+              <Link
+                to="/login"
+                style={{ color: "#1976d2", textDecoration: "none" }}
+              >
+                Login
+              </Link>
+            </Typography>
           </Box>
         </Fade>
       </Box>

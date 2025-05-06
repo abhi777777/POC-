@@ -1,8 +1,21 @@
 import React, { useEffect } from "react";
-import { Typography, TextField, Grid, IconButton, Button } from "@mui/material";
+import {
+  Typography,
+  TextField,
+  Grid,
+  IconButton,
+  Button,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+} from "@mui/material";
 import { AddCircle, RemoveCircle } from "@mui/icons-material";
 
 const MedicalHistorySection = ({ formData, setFormData, setStepValid }) => {
+  const hasHistory = formData.hasMedicalHistory === "yes";
+
   const handleEntryChange = (index) => (e) => {
     const { value } = e.target;
     const entries = [...formData.medicalHistory];
@@ -24,48 +37,84 @@ const MedicalHistorySection = ({ formData, setFormData, setStepValid }) => {
     }));
   };
 
+  const handleYesNoChange = (e) => {
+    const value = e.target.value;
+    setFormData((prev) => ({
+      ...prev,
+      hasMedicalHistory: value,
+      medicalHistory: value === "yes" ? [""] : [],
+    }));
+  };
+
   useEffect(() => {
-    setStepValid(true);
-  }, [formData.medicalHistory, setStepValid]);
+    if (formData.hasMedicalHistory === "no") {
+      setStepValid(true);
+    } else if (
+      formData.hasMedicalHistory === "yes" &&
+      formData.medicalHistory.some((cond) => cond.trim() !== "")
+    ) {
+      setStepValid(true);
+    } else {
+      setStepValid(false);
+    }
+  }, [formData.hasMedicalHistory, formData.medicalHistory, setStepValid]);
 
   return (
     <>
-      <Typography variant="subtitle1">Medical History</Typography>
-      {formData.medicalHistory.map((entry, idx) => (
-        <Grid
-          container
-          spacing={2}
-          alignItems="center"
-          key={idx}
-          sx={{ mb: 1 }}
+      <Typography variant="h6" sx={{ mb: 2 }}>
+        Medical History
+      </Typography>
+
+      <FormControl component="fieldset" sx={{ mb: 3 }}>
+        <FormLabel>Do you have any past medical conditions?</FormLabel>
+        <RadioGroup
+          row
+          name="hasMedicalHistory"
+          value={formData.hasMedicalHistory || ""}
+          onChange={handleYesNoChange}
         >
-          <Grid item xs={11}>
+          <FormControlLabel value="yes" control={<Radio />} label="Yes" />
+          <FormControlLabel value="no" control={<Radio />} label="No" />
+        </RadioGroup>
+      </FormControl>
+
+      {hasHistory &&
+        formData.medicalHistory.map((entry, idx) => (
+          <Grid item xs={12} sx={{ position: "relative", mb: 2 }}>
             <TextField
-              label={`Condition ${idx + 1}`}
+              label={`Condition `}
               value={entry}
               onChange={handleEntryChange(idx)}
               fullWidth
               multiline
               rows={2}
             />
-          </Grid>
-          <Grid item xs={1}>
             {idx > 0 && (
-              <IconButton color="error" onClick={() => removeEntry(idx)}>
+              <IconButton
+                color="error"
+                onClick={() => removeEntry(idx)}
+                sx={{
+                  position: "absolute",
+                  top: 8,
+                  right: 8,
+                }}
+              >
                 <RemoveCircle />
               </IconButton>
             )}
           </Grid>
-        </Grid>
-      ))}
-      <Button
-        type="button"
-        variant="outlined"
-        startIcon={<AddCircle />}
-        onClick={addEntry}
-      >
-        Add Condition
-      </Button>
+        ))}
+
+      {hasHistory && (
+        <Button
+          type="button"
+          variant="outlined"
+          startIcon={<AddCircle />}
+          onClick={addEntry}
+        >
+          Add Condition
+        </Button>
+      )}
     </>
   );
 };

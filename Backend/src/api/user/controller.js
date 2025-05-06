@@ -110,3 +110,74 @@ exports.verify = (req, res) => {
       .json({ error: "Server error during authorization." });
   }
 };
+exports.logout = async (req, res) => {
+  try {
+    // Find the login record and mark it as inactive if tracking sessions
+    if (req.user && req.user._id) {
+      await Login.findOneAndUpdate(
+        { userId: req.user._id, active: true },
+        { active: false }
+      );
+    }
+
+    // Clear the authentication cookie
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    console.log("User logged out successfully");
+    return res.status(200).json({ message: "Logged out successfully" });
+  } catch (err) {
+    console.error("Logout error:", err);
+    return res.status(500).json({ error: "Error during logout" });
+  }
+};
+
+// Profile function to get user data
+exports.profile = async (req, res) => {
+  try {
+    // Get token from cookies or authorization header
+    const authHeader = req.headers.authorization;
+    const tokenFromHeader = authHeader && authHeader.split(" ")[1];
+    const token = tokenFromHeader || req.cookies.token;
+
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    // Verify token and get user ID
+    let decoded;
+    try {
+      decoded = jwt.decode(token, { complete: true });
+      if (!decoded || !decoded.payload) {
+        return res.status(401).json({ error: "Invalid token format" });
+      }
+    } catch (err) {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+
+    const userId = decoded.payload.id;
+
+    // Find user by ID (exclude password from results)
+    const user = await User.findById(userId).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Return user data
+    return res.status(200).json({
+      name: user.name,
+      email: user.email,
+      phone: user.mobile,
+      role: user.role,
+      dob: user.dob,
+      address: user.address,
+    });
+  } catch (err) {
+    console.error("Profile fetch error:", err);
+    return res.status(500).json({ error: "Error fetching profile data" });
+  }
+};

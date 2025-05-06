@@ -101,7 +101,7 @@ function PoliciesList() {
                         fontSize: isMobile ? "0.7rem" : "0.9rem",
                       }}
                     >
-                      Policy Title
+                      Full Name
                     </TableCell>
                     <TableCell
                       sx={{
@@ -109,10 +109,23 @@ function PoliciesList() {
                         fontSize: isMobile ? "0.7rem" : "0.9rem",
                       }}
                     >
-                      Name
+                      Tenure
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: isMobile ? "0.7rem" : "0.9rem",
+                      }}
+                    >
+                      Premium
                     </TableCell>
                     {!isMobile && (
-                      <TableCell sx={{ fontWeight: 600, fontSize: "0.9rem" }}>
+                      <TableCell
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "0.9rem",
+                        }}
+                      >
                         Email
                       </TableCell>
                     )}
@@ -126,12 +139,11 @@ function PoliciesList() {
                     </TableCell>
                   </TableRow>
                 </TableHead>
+
                 <TableBody>
                   {selectedPolicies.map((p, index) => (
                     <TableRow
                       key={p._id}
-                      component={Box}
-                      display="table-row"
                       hover
                       sx={{
                         backgroundColor: index % 2 === 0 ? "#fafafa" : "#fff",
@@ -145,7 +157,7 @@ function PoliciesList() {
                           py: 1,
                         }}
                       >
-                        {p.policyTitle}
+                        {`${p.firstName} ${p.lastName}`}
                       </TableCell>
                       <TableCell
                         sx={{
@@ -153,10 +165,25 @@ function PoliciesList() {
                           py: 1,
                         }}
                       >
-                        {`${p.firstName} ${p.lastName}`}
+                        {p.tenure != null ? `${p.tenure} years` : "—"}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontSize: isMobile ? "0.7rem" : "0.85rem",
+                          py: 1,
+                        }}
+                      >
+                        {typeof p.premium === "number"
+                          ? `₹${p.premium.toLocaleString()}`
+                          : "—"}
                       </TableCell>
                       {!isMobile && (
-                        <TableCell sx={{ fontSize: "0.85rem", py: 1 }}>
+                        <TableCell
+                          sx={{
+                            fontSize: "0.85rem",
+                            py: 1,
+                          }}
+                        >
                           {p.email}
                         </TableCell>
                       )}
@@ -191,7 +218,7 @@ function PoliciesList() {
               color="text.secondary"
               sx={{ fontSize: isMobile ? "0.7rem" : "0.85rem" }}
             >
-              Showing {startIndex + 1}–
+              Showing {startIndex + 1}–{" "}
               {Math.min(startIndex + POLICIES_PER_PAGE, policies.length)} of{" "}
               {policies.length} policies
             </Typography>

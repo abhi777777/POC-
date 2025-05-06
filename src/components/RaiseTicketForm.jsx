@@ -21,7 +21,7 @@ const RaiseTicketForm = () => {
   const [pendingTicketId, setPendingTicketId] = useState(null);
   const [showOtpForm, setShowOtpForm] = useState(false);
   const [otp, setOtp] = useState("");
-  const [email, setEmail] = useState("");
+
   const [verifying, setVerifying] = useState(false);
 
   const handleSubmit = async (updates) => {
@@ -43,7 +43,6 @@ const RaiseTicketForm = () => {
       if (result.pendingTicketId) {
         setPendingTicketId(result.pendingTicketId);
         setShowOtpForm(true);
-        setEmail(updates.email || ""); // Use provided email or default to empty for user to enter
       } else if (result.ticket && result.ticket._id) {
         // Direct success (unlikely with OTP flow but keeping as fallback)
         setSuccess(true);
@@ -71,7 +70,6 @@ const RaiseTicketForm = () => {
         },
         body: JSON.stringify({
           pendingTicketId,
-          email,
           otp,
         }),
         credentials: "include",
@@ -101,7 +99,6 @@ const RaiseTicketForm = () => {
       <Box>
         <Alert severity="success" sx={{ mb: 2 }}>
           Your update request has been submitted successfully!{" "}
-          {ticketId && `Ticket ID: ${ticketId}`}
         </Alert>
         <Typography variant="body1">
           Our team will review your changes and get back to you soon.
@@ -127,15 +124,6 @@ const RaiseTicketForm = () => {
             {error}
           </Alert>
         )}
-
-        <TextField
-          fullWidth
-          label="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          disabled={verifying}
-          sx={{ mb: 2 }}
-        />
 
         <TextField
           fullWidth

@@ -127,7 +127,7 @@ exports.getAvailablePolicies = async (req, res) => {
     const filter = { email: user.email, purchased: false };
 
     const policies = await Policy.find(filter).select(
-      " policyTitle firstName middleName lastName email mobile"
+      "  firstName middleName lastName email mobile tenure premium coverageAmount "
     );
 
     res.json({ policies });

@@ -1,3 +1,4 @@
+// src/CreatePolicyForm.jsx
 import React, { useState } from "react";
 import axios from "axios";
 import {
@@ -49,7 +50,6 @@ export default function CreatePolicyForm() {
 
   const handleSubmit = async (e) => {
     if (e?.preventDefault) e.preventDefault();
-
     try {
       await axios.post(
         "http://localhost:4000/api/policy/CreatePolicies",
@@ -71,11 +71,56 @@ export default function CreatePolicyForm() {
     }
   };
 
-  const updateStepValid = (index, valid) =>
+  // Full premium calculation function
+  const calculatePremium = ({
+    coverageAmount,
+    tenure,
+    medicalHistory,
+    lifestyle,
+  }) => {
+    const cov = Number(coverageAmount) || 0;
+
+    let base;
+    if (cov <= 500_000) base = 3_000;
+    else if (cov <= 1_000_000) base = 5_000;
+    else if (cov <= 1_500_000) base = 10_000;
+    else if (cov <= 2_000_000) base = 15_000;
+    else if (cov <= 2_500_000) base = 20_000;
+    else {
+      const extraBrackets = Math.min(
+        Math.floor((cov - 2_500_000) / 500_000) + 1,
+        5
+      );
+      base = 20_000 + extraBrackets * 5_000;
+    }
+
+    const medCount = Array.isArray(medicalHistory)
+      ? medicalHistory.filter((x) => Boolean(x)).length
+      : 0;
+
+    const lifeKeys = ["smoking", "drinking", "panMasala", "others"];
+    const lifeCount = lifeKeys.reduce((sum, key) => {
+      const entry = lifestyle?.[key];
+      if (!entry) return sum;
+      return (
+        sum + (key === "others" ? 1 : entry.freq || entry.quantity ? 1 : 0)
+      );
+    }, 0);
+
+    const issueCharges = (medCount + lifeCount) * 750;
+
+    // The discount is applied to the premium, not the coverage amount
+    const discountRate = tenure === 3 ? 0.1 : tenure === 2 ? 0.05 : 0;
+    const discountedBase = Math.round(base * (1 - discountRate));
+
+    return discountedBase + issueCharges;
+  };
+
+  const updateStepValid = (idx, valid) =>
     setStepsValid((prev) => {
-      const copy = [...prev];
-      copy[index] = valid;
-      return copy;
+      const clone = [...prev];
+      clone[idx] = valid;
+      return clone;
     });
 
   const sections = [
@@ -85,45 +130,44 @@ export default function CreatePolicyForm() {
       setFormData={setFormData}
       errors={errors}
       setErrors={setErrors}
-      setStepValid={(valid) => updateStepValid(0, valid)}
+      setStepValid={(v) => updateStepValid(0, v)}
     />,
     <Summing
       key="summing"
       formData={formData}
       setFormData={setFormData}
-      setStepValid={(valid) => updateStepValid(1, valid)}
+      setStepValid={(v) => updateStepValid(1, v)}
     />,
     <BMISection
       key="bmi"
       formData={formData}
       setFormData={setFormData}
-      setStepValid={(valid) => updateStepValid(2, valid)}
+      setStepValid={(v) => updateStepValid(2, v)}
     />,
     <LifestyleSection
       key="lifestyle"
       formData={formData}
       setFormData={setFormData}
-      setStepValid={(valid) => updateStepValid(3, valid)}
+      setStepValid={(v) => updateStepValid(3, v)}
     />,
     <MedicalHistorySection
       key="medical"
       formData={formData}
       setFormData={setFormData}
-      setStepValid={(valid) => updateStepValid(4, valid)}
+      setStepValid={(v) => updateStepValid(4, v)}
     />,
     <NomineeSection
       key="nominees"
       formData={formData}
       setFormData={setFormData}
-      setStepValid={(valid) => updateStepValid(5, valid)}
+      setStepValid={(v) => updateStepValid(5, v)}
     />,
     <AdditionalInfoSection
       key="additional"
       formData={formData}
       setFormData={setFormData}
-      setStepValid={(valid) => updateStepValid(6, valid)}
+      setStepValid={(v) => updateStepValid(6, v)}
     />,
-    // Placeholder for review step (actual content is in the modal)
     <Box key="review" />,
   ];
 
@@ -137,10 +181,10 @@ export default function CreatePolicyForm() {
         gap: 3,
         maxWidth: isMobile ? "95%" : 900,
         mx: "auto",
-        padding: isMobile ? 2 : 3,
+        p: isMobile ? 2 : 3,
       }}
     >
-      <Typography variant="h6" align="center" gutterBottom>
+      <Typography variant="h6" align="center">
         Create New Policy
       </Typography>
 
@@ -157,7 +201,7 @@ export default function CreatePolicyForm() {
         ))}
       </Stepper>
 
-      <Box sx={{ mb: 2 }}>{sections[activeStep]}</Box>
+      {sections[activeStep]}
 
       <Box
         sx={{
@@ -169,7 +213,6 @@ export default function CreatePolicyForm() {
         }}
       >
         <Button
-          type="button"
           disabled={activeStep === 0}
           onClick={handleBack}
           sx={{ width: isMobile ? "100%" : "auto" }}
@@ -188,7 +231,11 @@ export default function CreatePolicyForm() {
           </Button>
         ) : (
           <Button
-            onClick={() => setShowReview(true)}
+            onClick={() => {
+              const premium = calculatePremium(formData);
+              setFormData((prev) => ({ ...prev, premium })); // Save premium to form data
+              setShowReview(true);
+            }}
             variant="contained"
             sx={{ width: isMobile ? "100%" : "auto" }}
           >
@@ -203,11 +250,7 @@ export default function CreatePolicyForm() {
         open={showReview}
         onClose={() => setShowReview(false)}
         formData={formData}
-        onConfirm={(premium) => {
-          setFormData((prev) => ({
-            ...prev,
-            premium,
-          }));
+        onConfirm={() => {
           setShowReview(false);
           handleSubmit();
         }}

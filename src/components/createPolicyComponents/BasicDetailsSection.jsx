@@ -86,7 +86,7 @@ export default function BasicDetailsSection({
 
   useEffect(() => {
     const requiredFields = [
-      "title",
+      "Title",
       "firstName",
       "lastName",
       "email",
@@ -115,11 +115,11 @@ export default function BasicDetailsSection({
             <InputLabel shrink>Title*</InputLabel>
             <Select
               name="title"
+              label="Title"
               value={formData.title}
               onChange={handleChange}
               onBlur={handleBlur}
               displayEmpty
-              notched
             >
               <MenuItem value="">
                 <em>Select Title</em>
@@ -144,6 +144,8 @@ export default function BasicDetailsSection({
             fullWidth
             error={!!errors.firstName}
             helperText={errors.firstName}
+            displayEmpty
+            autoComplete="off"
           />
         </Grid>
 
@@ -197,6 +199,7 @@ export default function BasicDetailsSection({
             label="Mobile"
             name="mobile"
             value={formData.mobile}
+            type="number"
             onChange={handleChange}
             onBlur={handleBlur}
             required
@@ -258,6 +261,7 @@ export default function BasicDetailsSection({
           <TextField
             label="Income"
             name="income"
+            type="number"
             value={formData.income}
             onChange={handleChange}
             onBlur={handleBlur}
@@ -270,7 +274,7 @@ export default function BasicDetailsSection({
 
         {/* Gender */}
         <Grid item xs={12} sm={4}>
-          <Typography variant="subtitle1">Gender</Typography>
+          <Typography variant="subtitle1">Gender *</Typography>
           <RadioGroup
             name="gender"
             row

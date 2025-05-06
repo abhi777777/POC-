@@ -1,151 +1,237 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Grid,
-  Typography,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   IconButton,
+  MenuItem,
+  Typography,
   Button,
+  Box,
 } from "@mui/material";
-import { RemoveCircle, AddCircle } from "@mui/icons-material";
-
-const relationOptions = [
-  { value: "Father", gender: "male" },
-  { value: "Mother", gender: "female" },
-  { value: "Brother", gender: "male" },
-  { value: "Sister", gender: "female" },
-  { value: "Other", gender: "" },
-];
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
 
 const NomineeSection = ({ formData, setFormData, setStepValid }) => {
-  const handleNomineeChange = (index, field) => (e) => {
-    const { value } = e.target;
-    const nominees = [...formData.nominees];
-    nominees[index][field] = value;
-    if (field === "relation" && value !== "Other") {
-      const relationObj = relationOptions.find((opt) => opt.value === value);
-      nominees[index].gender = relationObj.gender;
-    }
-    setFormData((prev) => ({ ...prev, nominees }));
-  };
+  const relationOptions = ["Father", "Mother", "Brother", "Sister", "Other"];
+  const genderOptions = ["Male", "Female", "Other"];
 
-  const addNominee = () => {
-    setFormData((prev) => ({
-      ...prev,
-      nominees: [
-        ...prev.nominees,
-        { name: "", relation: "", gender: "", contribution: "" },
-      ],
-    }));
-  };
-
-  const removeNominee = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      nominees: prev.nominees.filter((_, i) => i !== index),
-    }));
-  };
+  // Calculate total contribution
+  const totalContribution = formData.nominees.reduce(
+    (sum, nominee) => sum + Number(nominee.contribution || 0),
+    0
+  );
 
   useEffect(() => {
-    const isNomineesValid = formData.nominees.every(
+    const isNomineesFilled = formData.nominees.every(
       (nominee) =>
         nominee.name?.trim() &&
         nominee.relation &&
         nominee.gender &&
         nominee.contribution?.trim()
     );
-    setStepValid(isNomineesValid);
-  }, [formData.nominees]);
+
+    const isContributionValid = totalContribution === 100;
+
+    setStepValid(isNomineesFilled && isContributionValid);
+  }, [formData.nominees, totalContribution, setStepValid]);
+
+  const handleNomineeChange = (index, field) => (e) => {
+    const value = e.target.value;
+    const updatedNominees = [...formData.nominees];
+    updatedNominees[index][field] = value;
+
+    // Auto-set gender based on relation
+    if (field === "relation") {
+      if (value === "Father" || value === "Brother") {
+        updatedNominees[index].gender = "Male";
+      } else if (value === "Mother" || value === "Sister") {
+        updatedNominees[index].gender = "Female";
+      } else {
+        updatedNominees[index].gender = ""; // Allow manual selection
+      }
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      nominees: updatedNominees,
+    }));
+  };
+
+  const handleAddNominee = () => {
+    const newNominee = {
+      name: "",
+      relation: "",
+      gender: "",
+      contribution: "",
+    };
+    setFormData((prev) => ({
+      ...prev,
+      nominees: [...prev.nominees, newNominee],
+    }));
+  };
+
+  const handleRemoveNominee = (index) => () => {
+    const updatedNominees = [...formData.nominees];
+    updatedNominees.splice(index, 1);
+    setFormData((prev) => ({
+      ...prev,
+      nominees: updatedNominees,
+    }));
+  };
 
   return (
-    <>
-      <Typography variant="subtitle1" sx={{ mb: 2 }}>
-        Nominees
-      </Typography>
+    <Box sx={{ width: "100%" }}>
       {formData.nominees.map((nominee, idx) => (
         <Grid
           container
-          spacing={2}
-          alignItems="center"
           key={idx}
-          sx={{ mb: 1 }}
+          direction="column"
+          sx={{
+            mb: 3,
+            border: "1px solid #ccc",
+            borderRadius: "4px",
+            padding: 2,
+          }}
+          spacing={2}
         >
-          <Grid item xs={12} sm={3}>
+          {/* Name */}
+          <Grid item>
             <TextField
               label="Name"
               value={nominee.name}
-              onChange={handleNomineeChange(idx, "name")}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (/^[A-Za-z ]*$/.test(val)) {
+                  handleNomineeChange(idx, "name")(e);
+                }
+              }}
               fullWidth
               required
-              margin="normal"
+              size="medium"
+              inputProps={{
+                pattern: "^[A-Za-z ]+$",
+                title: "Only alphabets and spaces allowed",
+              }}
             />
           </Grid>
-          <Grid item xs={12} sm={3}>
-            <FormControl fullWidth margin="normal">
-              <InputLabel id={`nominee-relation-${idx}`}>Relation</InputLabel>
-              <Select
-                labelId={`nominee-relation-${idx}`}
-                value={nominee.relation}
-                onChange={handleNomineeChange(idx, "relation")}
-                label="Relation"
-              >
-                {relationOptions.map((opt) => (
-                  <MenuItem key={opt.value} value={opt.value}>
-                    {opt.value}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={2}>
+
+          {/* Relationship */}
+          <Grid item>
             <TextField
+              select
+              label="Relationship"
+              value={nominee.relation}
+              onChange={handleNomineeChange(idx, "relation")}
+              fullWidth
+              required
+              size="medium"
+            >
+              {relationOptions.map((relation) => (
+                <MenuItem key={relation} value={relation}>
+                  {relation}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          {/* Gender */}
+          <Grid item>
+            <TextField
+              select
               label="Gender"
               value={nominee.gender}
               onChange={handleNomineeChange(idx, "gender")}
               fullWidth
               required
-              margin="normal"
-              InputProps={{
-                readOnly: nominee.relation !== "Other",
-              }}
-            />
+              size="medium"
+              disabled={
+                nominee.relation === "Father" ||
+                nominee.relation === "Mother" ||
+                nominee.relation === "Brother" ||
+                nominee.relation === "Sister"
+              }
+            >
+              {genderOptions.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </TextField>
           </Grid>
-          <Grid item xs={12} sm={2}>
+
+          {/* Contribution (full width) */}
+          <Grid item>
             <TextField
-              label="Contribution (%)"
+              label="Contribution %"
+              type="number"
               value={nominee.contribution}
               onChange={handleNomineeChange(idx, "contribution")}
               fullWidth
               required
-              margin="normal"
+              size="medium"
+              InputProps={{
+                endAdornment: <Typography variant="body2">%</Typography>,
+              }}
+              inputProps={{
+                min: 0,
+                max: 100,
+                step: 1,
+              }}
             />
           </Grid>
-          {idx > 0 && (
-            <Grid item xs={12} sm={1}>
-              <IconButton
-                onClick={() => removeNominee(idx)}
-                color="error"
-                sx={{ mt: 2 }}
-              >
-                <RemoveCircle />
-              </IconButton>
-            </Grid>
-          )}
+
+          {/* Delete Button aligned to the right */}
+          <Grid item sx={{ display: "flex", justifyContent: "flex-end" }}>
+            <IconButton
+              onClick={handleRemoveNominee(idx)}
+              color="error"
+              disabled={formData.nominees.length <= 1}
+            >
+              <DeleteIcon />
+            </IconButton>
+          </Grid>
         </Grid>
       ))}
-      <Button
-        type="button"
-        variant="outlined"
-        startIcon={<AddCircle />}
-        onClick={addNominee}
-        sx={{ alignSelf: "flex-start", mt: 2 }}
+
+      {totalContribution > 100 && (
+        <Typography color="error" variant="body2" sx={{ mb: 2 }}>
+          Total contribution exceeds 100%
+        </Typography>
+      )}
+
+      <Box
+        sx={{
+          mt: 2,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
       >
-        Add Nominee
-      </Button>
-    </>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AddIcon />}
+          onClick={handleAddNominee}
+          disabled={formData.nominees.length >= 5}
+        >
+          Add Nominee
+        </Button>
+
+        <Typography
+          variant="body2"
+          sx={{
+            color:
+              totalContribution > 100
+                ? "error.main"
+                : totalContribution === 100
+                  ? "success.main"
+                  : "text.secondary",
+          }}
+        >
+          Total Contribution: {totalContribution}%
+        </Typography>
+      </Box>
+    </Box>
   );
 };
 

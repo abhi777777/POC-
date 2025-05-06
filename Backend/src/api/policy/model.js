@@ -13,7 +13,7 @@ const nomineeSchema = new mongoose.Schema(
 const policySchema = new mongoose.Schema(
   {
     // Basic Details
-    title: { type: String, required: true },
+
     firstName: { type: String, required: true },
     middleName: { type: String },
     lastName: { type: String, required: true },
