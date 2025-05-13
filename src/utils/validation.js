@@ -1,14 +1,9 @@
-/**
- * Validates form data and returns errors object
- * @param {Object} formData - The form data to validate
- * @returns {Object} - Object with field names as keys and error messages as values
- */
+
 export const validateForm = (formData) => {
   let errors = {};
   const { firstName, middleName, lastName, email, mobile, additional } =
     formData;
 
-  // Validate First Name, Middle Name, Last Name
   const nameRegex = /^[A-Za-z]+$/;
   if (!nameRegex.test(firstName))
     errors.firstName = "First Name can't contain numbers";

@@ -13,17 +13,31 @@ import {
   DialogContent,
   IconButton,
   Button,
+  TextField,
+  InputAdornment,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Pagination,
+  Chip,
 } from "@mui/material";
 import PolicyIcon from "@mui/icons-material/Description";
 import CloseIcon from "@mui/icons-material/Close";
+import SearchIcon from "@mui/icons-material/Search";
+
+const PAGE_SIZE = 6;
 
 export default function PurchasedPolicies() {
   const [purchases, setPurchases] = useState([]);
+  const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [search, setSearch] = useState("");
+  const [sortOption, setSortOption] = useState("newest");
+  const [page, setPage] = useState(1);
 
-  // Fetch purchased policies
   useEffect(() => {
     async function fetchMy() {
       try {
@@ -44,7 +58,27 @@ export default function PurchasedPolicies() {
     fetchMy();
   }, []);
 
-  // Open policy detail dialog
+  useEffect(() => {
+    let result = [...purchases];
+
+    if (search.trim()) {
+      result = result.filter((p) =>
+        p.policy?.name?.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    if (sortOption === "newest") {
+      result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    } else if (sortOption === "coverage") {
+      result.sort(
+        (a, b) => b.policy?.coverageAmount - a.policy?.coverageAmount
+      );
+    }
+
+    setFiltered(result);
+    setPage(1); // reset to page 1 on filter/sort
+  }, [search, sortOption, purchases]);
+
   const handleCardClick = (policy) => {
     setSelectedPolicy(policy);
     setOpenDialog(true);
@@ -55,69 +89,109 @@ export default function PurchasedPolicies() {
     setSelectedPolicy(null);
   };
 
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
     <Box p={3}>
       <Typography variant="h5" gutterBottom>
         My Purchased Policies
       </Typography>
 
-      {/* Loading State */}
+      <Box display="flex" gap={2} flexWrap="wrap" mb={3}>
+        <TextField
+          placeholder="Search by name"
+          size="small"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+        />
+
+        <FormControl size="small">
+          <InputLabel>Sort By</InputLabel>
+          <Select
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value)}
+            label="Sort By"
+          >
+            <MenuItem value="newest">Newest</MenuItem>
+            <MenuItem value="coverage">Coverage Amount</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
+
       {loading ? (
         <Box display="flex" justifyContent="center" mt={4}>
           <CircularProgress />
         </Box>
-      ) : purchases.length === 0 ? (
-        // Empty State
+      ) : filtered.length === 0 ? (
         <Box textAlign="center" mt={5}>
-          <Typography variant="h6">No policies purchased yet.</Typography>
+          <Typography variant="h6">No matching policies found.</Typography>
         </Box>
       ) : (
-        // Policy Cards
-        <Grid container spacing={3}>
-          {purchases.map((p) => (
-            <Grid item xs={12} sm={6} md={4} key={p._id}>
-              <Card
-                elevation={3}
-                sx={{ borderRadius: 3, cursor: "pointer" }}
-                onClick={() => handleCardClick(p)}
-              >
-                <CardContent>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <Avatar sx={{ bgcolor: "#ffbb00" }}>
-                      <PolicyIcon />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Purchased on:{" "}
-                        {new Date(p.createdAt).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </Typography>
+        <>
+          <Grid container spacing={3}>
+            {paginated.map((p) => (
+              <Grid item xs={12} sm={6} md={4} key={p._id}>
+                <Card
+                  elevation={3}
+                  sx={{ borderRadius: 3, cursor: "pointer" }}
+                  onClick={() => handleCardClick(p)}
+                >
+                  <CardContent>
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Avatar sx={{ bgcolor: "#ffbb00" }}>
+                        <PolicyIcon />
+                      </Avatar>
+                      <Box>
+                        <Typography fontWeight={600}>
+                          {p.policy?.name || "Unnamed Policy"}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          ₹{p.policy?.coverageAmount} | {p.policy?.tenure} yrs
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Purchased on:{" "}
+                          {new Date(p.createdAt).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                    <Box mt={1}>
+                      <Chip label="Active" color="success" size="small" />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+
+          <Box display="flex" justifyContent="center" mt={4}>
+            <Pagination
+              count={Math.ceil(filtered.length / PAGE_SIZE)}
+              page={page}
+              onChange={(e, val) => setPage(val)}
+              color="primary"
+            />
+          </Box>
+        </>
       )}
 
-      {/* Policy Details Dialog */}
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between" }}>
           Policy Details
           <IconButton onClick={handleCloseDialog}>
             <CloseIcon />
@@ -128,17 +202,12 @@ export default function PurchasedPolicies() {
             <>
               <Typography variant="body2" color="text.secondary" gutterBottom>
                 Purchased on:{" "}
-                {new Date(selectedPolicy.createdAt).toLocaleDateString(
-                  "en-IN",
-                  {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  }
-                )}
+                {new Date(selectedPolicy.createdAt).toLocaleDateString("en-IN")}
               </Typography>
-
               <Box mt={2}>
+                <Typography>
+                  <strong>Name:</strong> {selectedPolicy.policy?.name || "N/A"}
+                </Typography>
                 <Typography>
                   <strong>Coverage Amount:</strong> ₹
                   {selectedPolicy.policy?.coverageAmount || "N/A"}
@@ -152,12 +221,7 @@ export default function PurchasedPolicies() {
                   {selectedPolicy.policy?.tenure || "N/A"} years
                 </Typography>
               </Box>
-
-              <Box mt={3} display="flex" justifyContent="flex-end" gap={1}>
-                {/* Optional: Add Download Button */}
-                {/* <Button variant="outlined" onClick={handleDownloadPDF}>
-                  Download PDF
-                </Button> */}
+              <Box mt={3} display="flex" justifyContent="flex-end">
                 <Button
                   variant="contained"
                   onClick={handleCloseDialog}

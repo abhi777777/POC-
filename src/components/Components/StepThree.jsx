@@ -1,4 +1,5 @@
 import React from "react";
+import { useFormikContext } from "formik";
 import {
   Box,
   Typography,
@@ -7,43 +8,19 @@ import {
   FormControl,
   Select,
   MenuItem,
-  Button,
   useTheme,
   useMediaQuery,
 } from "@mui/material";
 
-export default function Summing({
-  formData,
-  setFormData,
-  stepValid,
-  setStepValid,
-  onNext,
-  onBack,
-}) {
+const StepThree = ({ errors, touched }) => {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
-
-  const handleChange = (field) => (e) => {
-    const raw = e.target.value;
-    setFormData((prev) => ({
-      ...prev,
-      [field]: raw,
-    }));
-  };
-
-  const validateFields = () => {
-    const isCovValid =
-      formData.coverageAmount >= 300000 && formData.coverageAmount <= 5000000;
-    const isTenValid = [1, 2, 3].includes(formData.tenure);
-    setStepValid(isCovValid && isTenValid);
-  };
-
-  React.useEffect(validateFields, [formData.coverageAmount, formData.tenure]);
+  const { values, handleChange, setFieldValue } = useFormikContext();
 
   // Calculate discount
   const getDiscount = () => {
-    if (formData.tenure === 2) return 5;
-    if (formData.tenure === 3) return 10;
+    if (values.tenure === 2) return 5;
+    if (values.tenure === 3) return 10;
     return 0;
   };
 
@@ -83,12 +60,18 @@ export default function Summing({
             Coverage Amount (₹)
           </Typography>
           <TextField
+            name="coverageAmount"
             type="number"
             fullWidth
-            value={formData.coverageAmount || ""}
-            onChange={handleChange("coverageAmount")}
-            inputProps={{ min: 300000, max: 5000000, step: 10000 }}
-            helperText="Enter between ₹3L and ₹50L"
+            value={values.coverageAmount || ""}
+            onChange={handleChange}
+            inputProps={{ min: 300000, max: 5000000 }}
+            helperText={
+              touched.coverageAmount && errors.coverageAmount
+                ? errors.coverageAmount
+                : "Enter between ₹3L and ₹50L"
+            }
+            error={touched.coverageAmount && Boolean(errors.coverageAmount)}
             placeholder="300000"
             variant="outlined"
           />
@@ -105,10 +88,15 @@ export default function Summing({
           >
             Policy Tenure
           </Typography>
-          <FormControl fullWidth variant="outlined">
+          <FormControl
+            fullWidth
+            variant="outlined"
+            error={touched.tenure && Boolean(errors.tenure)}
+          >
             <Select
-              value={formData.tenure || ""}
-              onChange={handleChange("tenure")}
+              name="tenure"
+              value={values.tenure || ""}
+              onChange={handleChange}
               displayEmpty
               sx={{ fontSize: isSmallScreen ? "0.9rem" : "1rem" }}
             >
@@ -136,6 +124,11 @@ export default function Summing({
                 )}
               </MenuItem>
             </Select>
+            {touched.tenure && errors.tenure && (
+              <Typography color="error" variant="caption">
+                {errors.tenure}
+              </Typography>
+            )}
           </FormControl>
         </Grid>
 
@@ -162,39 +155,9 @@ export default function Summing({
             </Grid>
           </>
         )}
-
-        <Grid item xs={12} sx={{ mt: isSmallScreen ? 1 : 2 }}>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: isSmallScreen ? "column" : "row",
-              justifyContent: "space-between",
-            }}
-          >
-            {onBack && (
-              <Button
-                variant="outlined"
-                onClick={onBack}
-                sx={{ mr: isSmallScreen ? 0 : 1, mb: isSmallScreen ? 1 : 0 }}
-                fullWidth={isSmallScreen}
-              >
-                Back
-              </Button>
-            )}
-            {onNext && (
-              <Button
-                variant="contained"
-                onClick={onNext}
-                disabled={!stepValid}
-                sx={{ ml: isSmallScreen ? 0 : "auto" }}
-                fullWidth={isSmallScreen}
-              >
-                Next
-              </Button>
-            )}
-          </Box>
-        </Grid>
       </Grid>
     </Box>
   );
-}
+};
+
+export default StepThree;

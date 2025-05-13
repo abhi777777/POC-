@@ -1,6 +1,7 @@
 const { User, Login } = require("./model");
 const { generateToken, verifyToken } = require("../../services/jwt/index");
 const jwt = require("jsonwebtoken");
+const { Policy } = require("../policy/model");
 
 exports.register = async (req, res) => {
   try {
@@ -112,7 +113,6 @@ exports.verify = (req, res) => {
 };
 exports.logout = async (req, res) => {
   try {
-    // Find the login record and mark it as inactive if tracking sessions
     if (req.user && req.user._id) {
       await Login.findOneAndUpdate(
         { userId: req.user._id, active: true },
@@ -179,5 +179,46 @@ exports.profile = async (req, res) => {
   } catch (err) {
     console.error("Profile fetch error:", err);
     return res.status(500).json({ error: "Error fetching profile data" });
+  }
+};
+exports.getStats = async (req, res) => {
+  try {
+    const token =
+      req.cookies.token ||
+      (req.headers.authorization && req.headers.authorization.split(" ")[1]);
+    if (!token) {
+      return res.status(401).json({ error: "Authentication token missing" });
+    }
+
+    const decoded = jwt.decode(token, { complete: true });
+    if (!decoded || !decoded.payload) {
+      return res.status(401).json({ error: "Invalid token format" });
+    }
+
+    const userId = decoded.payload.id;
+
+    const totalPolicies = await Policy.countDocuments({ createdBy: userId });
+
+    const soldPolicies = await Policy.find({
+      createdBy: userId,
+      purchased: true,
+    });
+
+    const policiesSold = soldPolicies.length;
+
+    const revenue = soldPolicies.reduce(
+      (sum, policy) => sum + (policy.premium || 0),
+      0
+    );
+
+    return res.status(200).json({
+      totalPolicies,
+      policiesSold,
+
+      revenue: `₹${revenue.toLocaleString("en-IN")}`,
+    });
+  } catch (err) {
+    console.error("Error fetching stats:", err);
+    return res.status(500).json({ error: "Failed to retrieve stats" });
   }
 };

@@ -1,10 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const controller = require("./controller");
+const upload = require("../../services/multer");
 
-// this is to verify if that is the consumer only
+// Middleware to authenticate users
 router.use(controller.authenticate);
-router.post("/raiseticket", controller.raiseticket);
+router.post("/raiseticket", upload.single("proofPdf"),controller.raiseticket);
 router.post("/verify", controller.verifyTicket);
 
 module.exports = router;

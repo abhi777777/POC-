@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Box,
   Typography,
@@ -7,18 +8,16 @@ import {
   Tab,
   Fade,
   IconButton,
-  Drawer,
-  Button,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
+  useTheme,
 } from "@mui/material";
 import { ListAlt, AddCircle, AccountCircle } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { useMediaQuery } from "@mui/material";
+
 import PoliciesList from "../../components/PoliciesList";
 import CreatePolicyForm from "../../components/CreatePolicyForm";
-import { useMediaQuery } from "@mui/material";
-import { useNavigate } from "react-router-dom"; // Import for redirection after logout
+import StatisticsCards from "../../components/StatisticsCards";
+import ProfileSidebar from "../../components/ProfileSidebar";
 
 export default function ProducerDashboard() {
   const [value, setValue] = useState(0);
@@ -27,6 +26,50 @@ export default function ProducerDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [stats, setStats] = useState({
+    totalPolicies: 0,
+    policiesSold: 0,
+
+    revenue: "₹0",
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState(null);
+
+  useEffect(() => {
+    const fetchStatsData = async () => {
+      try {
+        setStatsLoading(true);
+        const response = await fetch(
+          "http://localhost:4000/api/users/getStats",
+          {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to fetch statistics");
+        }
+
+        const data = await response.json();
+        setStats(data);
+        setStatsError(null);
+      } catch (error) {
+        console.error("Failed to fetch stats", error);
+        setStatsError("Could not load dashboard statistics.");
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchStatsData();
+  }, []);
+
+  const theme = useTheme();
   const navigate = useNavigate();
   const isMobile = useMediaQuery("(max-width:600px)");
 
@@ -39,7 +82,7 @@ export default function ProducerDashboard() {
           "http://localhost:4000/api/users/profile",
           {
             method: "GET",
-            credentials: "include", // Important for sending cookies
+            credentials: "include",
             headers: {
               "Content-Type": "application/json",
             },
@@ -77,27 +120,18 @@ export default function ProducerDashboard() {
     setIsSidebarOpen(false);
   };
 
-  // Handle logout functionality
+  7;
+
   const handleLogout = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/users/logout", {
-        method: "POST",
-        credentials: "include", // Important for sending cookies
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        // Redirect to login page after successful logout
-        navigate("/login");
-      } else {
-        const errorData = await response.json();
-        console.error("Logout failed:", errorData.error);
-        // You could add some UI feedback here if needed
-      }
-    } catch (error) {
-      console.error("Logout error:", error);
+      await axios.post(
+        "http://localhost:4000/api/users/logout",
+        {},
+        { withCredentials: true }
+      );
+      navigate("/login");
+    } catch (err) {
+      console.error("Logout failed:", err.response || err);
     }
   };
 
@@ -126,21 +160,38 @@ export default function ProducerDashboard() {
   return (
     <Box
       sx={{
-        p: 3,
+        p: { xs: 2, md: 3 },
         minHeight: "100vh",
-        background: "linear-gradient(to right, #ffecd2,rgb(80, 80, 80))",
+        background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
         position: "relative",
       }}
     >
-      <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
+      {/* Header */}
+      <Paper
+        elevation={3}
+        sx={{
+          p: { xs: 2, md: 3 },
+          mb: 3,
+          borderRadius: 2,
+          backgroundColor: "#fff",
+        }}
+      >
         <Typography variant="h4" gutterBottom fontWeight={600}>
-          Producer Dashboard
+          Hello Producer
         </Typography>
+      </Paper>
 
-        <Typography variant="h5" gutterBottom>
-          {renderSectionTitle()}
-        </Typography>
+      {/* Stats Cards */}
+      <StatisticsCards statsData={stats} />
 
+      {/* Main Content */}
+      <Paper
+        elevation={3}
+        sx={{
+          borderRadius: 2,
+          overflow: "hidden",
+        }}
+      >
         <Tabs
           value={value}
           onChange={handleTabChange}
@@ -148,22 +199,49 @@ export default function ProducerDashboard() {
           indicatorColor="primary"
           textColor="primary"
           aria-label="producer dashboard tabs"
+          sx={{
+            backgroundColor: "#f5f5f5",
+            borderBottom: "1px solid #e0e0e0",
+            "& .MuiTab-root": {
+              py: 2,
+              fontWeight: 500,
+            },
+            "& .Mui-selected": {
+              fontWeight: 700,
+            },
+            "& .MuiTabs-indicator": {
+              height: 3,
+            },
+          }}
         >
           <Tab
             icon={<ListAlt />}
             label="My Policies"
             aria-label="My Policies"
+            iconPosition="start"
           />
           <Tab
             icon={<AddCircle />}
             label="Create Policy"
             aria-label="Create Policy"
+            iconPosition="start"
           />
         </Tabs>
 
-        <Fade in timeout={400}>
-          <Box sx={{ mt: 2 }}>{renderView()}</Box>
-        </Fade>
+        <Box sx={{ p: { xs: 2, md: 3 } }}>
+          <Typography
+            variant="h5"
+            gutterBottom
+            fontWeight={600}
+            color="primary"
+          >
+            {renderSectionTitle()}
+          </Typography>
+
+          <Fade in timeout={400}>
+            <Box>{renderView()}</Box>
+          </Fade>
+        </Box>
       </Paper>
 
       {/* Profile button */}
@@ -173,127 +251,29 @@ export default function ProducerDashboard() {
           top: 20,
           right: 20,
           backgroundColor: "#fff",
-          boxShadow: 2,
+          boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
+          width: 50,
+          height: 50,
           "&:hover": {
-            backgroundColor: "#f0f0f0",
+            backgroundColor: "#f5f5f5",
           },
         }}
         aria-label="profile"
         onClick={handleProfileClick}
       >
-        <AccountCircle fontSize="large" />
+        <AccountCircle fontSize="large" color="primary" />
       </IconButton>
 
       {/* Sidebar (Drawer) for profile */}
-      <Drawer
-        anchor="right"
-        open={isSidebarOpen}
+      <ProfileSidebar
+        isOpen={isSidebarOpen}
         onClose={handleCloseSidebar}
-        sx={{
-          width: isMobile ? "60%" : 300,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: isMobile ? "60%" : 300,
-            padding: 2,
-            backgroundColor: "#f4f4f9",
-            borderRadius: 2,
-          },
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            height: "100%",
-            p: 2,
-          }}
-        >
-          <Box>
-            <Typography
-              variant="h6"
-              gutterBottom
-              fontWeight={600}
-              sx={{ textAlign: "center", mb: 3 }}
-            >
-              User Profile
-            </Typography>
-
-            {/* User Info Display */}
-            {loading ? (
-              <Typography variant="body1" sx={{ textAlign: "center" }}>
-                Loading user info...
-              </Typography>
-            ) : error ? (
-              <Typography
-                variant="body1"
-                color="error"
-                sx={{ textAlign: "center" }}
-              >
-                {error}
-              </Typography>
-            ) : userInfo ? (
-              <>
-                <List>
-                  <ListItem>
-                    <ListItemText
-                      primary="Full Name"
-                      secondary={userInfo.name || "N/A"}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText
-                      primary="Email"
-                      secondary={userInfo.email || "N/A"}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText
-                      primary="Phone"
-                      secondary={userInfo.phone || "N/A"}
-                    />
-                  </ListItem>
-                  {userInfo.role && (
-                    <ListItem>
-                      <ListItemText primary="Role" secondary={userInfo.role} />
-                    </ListItem>
-                  )}
-                  {userInfo.address && (
-                    <ListItem>
-                      <ListItemText
-                        primary="Address"
-                        secondary={userInfo.address}
-                      />
-                    </ListItem>
-                  )}
-                </List>
-                <Divider sx={{ my: 2 }} />
-              </>
-            ) : (
-              <Typography variant="body1" sx={{ textAlign: "center" }}>
-                No user information available.
-              </Typography>
-            )}
-          </Box>
-
-          {/* Logout Button */}
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleLogout} // Updated to use the logout function
-            sx={{
-              mt: 2,
-              borderRadius: 5,
-              backgroundColor: "#ff4444",
-              "&:hover": {
-                backgroundColor: "#ff1a1a",
-              },
-            }}
-          >
-            Logout
-          </Button>
-        </Box>
-      </Drawer>
+        userInfo={userInfo}
+        loading={loading}
+        error={error}
+        onLogout={handleLogout}
+        isMobile={isMobile}
+      />
     </Box>
   );
 }

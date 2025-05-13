@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Box,
   Typography,
@@ -14,265 +15,273 @@ import {
   ListItem,
   ListItemText,
   Divider,
+  Avatar,
   useMediaQuery,
+  BottomNavigation,
+  BottomNavigationAction,
+  Skeleton,
+  Badge,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import {
   ShoppingCart,
-  Assignment,
-  HelpOutline,
+  Description,
+  SupportAgent,
   AccountCircle,
+  Logout,
 } from "@mui/icons-material";
 import BuyPolicy from "../../components/BuyPolicy";
 import PurchasedPolicies from "../../components/PurchasedPolicies";
 import RaiseTicketForm from "../../components/RaiseTicketForm";
 import { useNavigate } from "react-router-dom";
 
+// Ensure your root App is wrapped in <ThemeProvider theme={yourTheme}>...
 export default function ConsumerDashboard() {
-  const [value, setValue] = useState(0);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const [tabIndex, setTabIndex] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-  const isMobile = useMediaQuery("(max-width:600px)");
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const loadProfile = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        const response = await fetch(
+        const { data } = await axios.get(
           "http://localhost:4000/api/users/profile",
           {
-            method: "GET",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
+            withCredentials: true,
           }
         );
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to fetch profile");
-        }
-
-        const data = await response.json();
         setUserInfo(data);
         setError(null);
-      } catch (error) {
-        console.error("Failed to fetch user data", error);
-        setError("Failed to load profile data. Please try again.");
+      } catch (err) {
+        console.error("Profile load error", err);
+        setError(err.response?.data?.error || "Could not load profile");
       } finally {
         setLoading(false);
       }
     };
-
-    fetchUserData();
+    loadProfile();
   }, []);
 
   const handleLogout = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/users/logout", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (response.ok) {
-        navigate("/login");
-      } else {
-        const errorData = await response.json();
-        console.error("Logout failed:", errorData.error);
-      }
-    } catch (error) {
-      console.error("Logout error:", error);
+      await axios.post(
+        "http://localhost:4000/api/users/logout",
+        {},
+        { withCredentials: true }
+      );
+      navigate("/login");
+    } catch (err) {
+      console.error("Logout failed:", err.response || err);
     }
   };
 
-  const handleTabChange = (event, newValue) => {
-    setValue(newValue);
-  };
-
-  const handleProfileClick = () => {
-    setIsSidebarOpen(true);
-  };
-
-  const handleCloseSidebar = () => {
-    setIsSidebarOpen(false);
-  };
-
-  const renderSectionTitle = () => {
-    switch (value) {
-      case 0:
-        return "Buy a New Policy";
-      case 1:
-        return "My Purchased Policies";
-      case 2:
-        return "Raise a Service Ticket";
-      default:
-        return "";
-    }
-  };
-
-  const renderView = () => {
-    switch (value) {
-      case 0:
-        return <BuyPolicy />;
-      case 1:
-        return <PurchasedPolicies />;
-      case 2:
-        return <RaiseTicketForm />;
-      default:
-        return null;
-    }
-  };
+  const sections = [
+    { label: "Buy Policy", icon: <ShoppingCart />, component: <BuyPolicy /> },
+    {
+      label: "My Policies",
+      icon: (
+        <Badge badgeContent={userInfo?.policies?.length || 0} color="secondary">
+          <Description />
+        </Badge>
+      ),
+      component: <PurchasedPolicies />,
+    },
+    {
+      label: "Support",
+      icon: <SupportAgent />,
+      component: <RaiseTicketForm />,
+    },
+  ];
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 }, minHeight: "100vh", position: "relative" }}>
-      <Typography variant="h4" gutterBottom>
-        Consumer Dashboard
-      </Typography>
+    <Box sx={{ p: 2, minHeight: "100vh", bgcolor: "background.default" }}>
+      {/* Welcome Banner */}
+      <Card
+        sx={{
+          mb: 3,
+          p: 2,
+          borderRadius: 2,
+          boxShadow: 3,
+          display: "flex",
+          alignItems: "center",
+          bgcolor: "primary.light",
+          color: "primary.contrastText",
+        }}
+      >
+        {loading ? (
+          <Skeleton variant="circular" width={60} height={60} />
+        ) : (
+          <Avatar sx={{ width: 60, height: 60, mr: 2 }}>
+            {userInfo?.name?.charAt(0)?.toUpperCase() || <AccountCircle />}
+          </Avatar>
+        )}
+        <Box>
+          <Typography variant="h5">
+            {loading ? (
+              <Skeleton width="50%" />
+            ) : (
+              `Hello, ${userInfo?.name?.split(" ")[0] || "User"}!`
+            )}
+          </Typography>
+          <Typography variant="body2">
+            {loading ? (
+              <Skeleton width="30%" />
+            ) : (
+              `Welcome back to your dashboard.`
+            )}
+          </Typography>
+        </Box>
+      </Card>
 
+      {/* Main Content Card */}
       <Card
         sx={{
           p: 3,
-          borderRadius: 3,
+          borderRadius: 2,
           boxShadow: 3,
-          backgroundColor: "#fafafa",
+          bgcolor: "background.paper",
         }}
       >
-        <Typography variant="h5" gutterBottom>
-          {renderSectionTitle()}
-        </Typography>
+        {!isMobile && (
+          <Tabs
+            value={tabIndex}
+            onChange={(e, v) => setTabIndex(v)}
+            variant="standard"
+            indicatorColor="primary"
+            textColor="inherit"
+            sx={{
+              borderBottom: "none",
+              borderColor: "divider",
+              minHeight: "auto",
+              ".MuiTab-root": {
+                minHeight: "auto",
+                textTransform: "none",
+                fontWeight: 500,
+                fontSize: "0.95rem",
+                px: 2,
+                color: "#555",
+                "&.Mui-selected": {
+                  color: "#000",
+                },
+              },
+              ".MuiTabs-indicator": {
+                height: 3,
+                borderRadius: 2,
+              },
+            }}
+          >
+            {sections.map((sec) => (
+              <Tab key={sec.label} icon={sec.icon} label={sec.label} />
+            ))}
+          </Tabs>
+        )}
 
-        <Tabs
-          value={value}
-          onChange={handleTabChange}
-          variant="fullWidth"
-          indicatorColor="primary"
-          textColor="primary"
-          aria-label="dashboard tabs"
-        >
-          <Tab icon={<ShoppingCart />} label="Buy Policy" />
-          <Tab icon={<Assignment />} label="My Policies" />
-          <Tab icon={<HelpOutline />} label="Raise Ticket" />
-        </Tabs>
-
-        <Slide direction="up" in={true} mountOnEnter unmountOnExit>
-          <Box sx={{ mt: 2 }}>
-            <Fade in timeout={400}>
-              <Box>{renderView()}</Box>
+        <Slide in mountOnEnter unmountOnExit direction="up">
+          <Box sx={{ mt: 2, minHeight: 300 }}>
+            <Fade in timeout={500}>
+              <Box>{sections[tabIndex].component}</Box>
             </Fade>
           </Box>
         </Slide>
       </Card>
 
-      {/* Profile Button */}
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <BottomNavigation
+          value={tabIndex}
+          onChange={(e, v) => setTabIndex(v)}
+          showLabels
+          sx={{ position: "fixed", bottom: 0, left: 0, right: 0, boxShadow: 3 }}
+        >
+          {sections.map((sec) => (
+            <BottomNavigationAction
+              key={sec.label}
+              label={sec.label}
+              icon={sec.icon}
+            />
+          ))}
+        </BottomNavigation>
+      )}
+
+      {/* Profile Drawer */}
       <IconButton
+        onClick={() => setSidebarOpen(true)}
         sx={{
-          position: "absolute",
-          top: 20,
-          right: 20,
-          backgroundColor: "#fff",
+          position: "fixed",
+          top: 16,
+          right: 16,
+          bgcolor: "background.paper",
           boxShadow: 2,
-          "&:hover": { backgroundColor: "#f0f0f0" },
         }}
-        onClick={handleProfileClick}
       >
         <AccountCircle fontSize="large" />
       </IconButton>
-
-      {/* Profile Sidebar */}
       <Drawer
         anchor="right"
-        open={isSidebarOpen}
-        onClose={handleCloseSidebar}
-        sx={{
-          width: isMobile ? "60%" : 300,
-          "& .MuiDrawer-paper": {
-            width: isMobile ? "60%" : 300,
-            padding: 2,
-            backgroundColor: "#f4f4f9",
-            borderRadius: 2,
-          },
-        }}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        PaperProps={{ sx: { width: isMobile ? "70%" : 300, p: 2 } }}
       >
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            height: "100%",
-            p: 2,
-          }}
-        >
-          <Box>
-            <Typography
-              variant="h6"
-              fontWeight={600}
-              sx={{ textAlign: "center", mb: 3 }}
-            >
-              User Profile
-            </Typography>
-
-            {loading ? (
-              <Typography sx={{ textAlign: "center" }}>
-                Loading user info...
-              </Typography>
-            ) : error ? (
-              <Typography color="error" sx={{ textAlign: "center" }}>
-                {error}
-              </Typography>
-            ) : userInfo ? (
-              <>
-                <List>
-                  <ListItem>
-                    <ListItemText
-                      primary="Full Name"
-                      secondary={userInfo.name || "N/A"}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText
-                      primary="Email"
-                      secondary={userInfo.email || "N/A"}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText
-                      primary="Phone"
-                      secondary={userInfo.phone || "N/A"}
-                    />
-                  </ListItem>
-                  {userInfo.role && (
-                    <ListItem>
-                      <ListItemText primary="Role" secondary={userInfo.role} />
-                    </ListItem>
-                  )}
-                </List>
-                <Divider sx={{ my: 2 }} />
-              </>
-            ) : (
-              <Typography sx={{ textAlign: "center" }}>
-                No user information available.
-              </Typography>
+        <Typography variant="h6" gutterBottom sx={{ textAlign: "center" }}>
+          Profile
+        </Typography>
+        <Divider sx={{ mb: 2 }} />
+        {loading ? (
+          <List>
+            {[1, 2, 3].map((i) => (
+              <ListItem key={i}>
+                <Skeleton width="80%" />
+              </ListItem>
+            ))}
+          </List>
+        ) : error ? (
+          <Typography color="error" sx={{ textAlign: "center" }}>
+            {error}
+          </Typography>
+        ) : (
+          <List>
+            <ListItem>
+              <ListItemText
+                primary="Full Name"
+                secondary={userInfo?.name || "N/A"}
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText
+                primary="Email"
+                secondary={userInfo?.email || "N/A"}
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText
+                primary="Phone"
+                secondary={userInfo?.phone || "N/A"}
+              />
+            </ListItem>
+            {userInfo?.role && (
+              <ListItem>
+                <ListItemText primary="Role" secondary={userInfo.role} />
+              </ListItem>
             )}
-          </Box>
-
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleLogout}
-            sx={{
-              mt: 2,
-              borderRadius: 5,
-              backgroundColor: "#ff4444",
-              "&:hover": {
-                backgroundColor: "#ff1a1a",
-              },
-            }}
-          >
-            Logout
-          </Button>
-        </Box>
+          </List>
+        )}
+        <Divider sx={{ my: 2 }} />
+        <Button
+          variant="contained"
+          startIcon={<Logout />}
+          onClick={handleLogout}
+          fullWidth
+          sx={{ mt: 1 }}
+        >
+          Logout
+        </Button>
       </Drawer>
     </Box>
   );

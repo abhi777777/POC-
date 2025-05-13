@@ -7,4 +7,5 @@ router.post("/login", controller.login);
 router.get("/verify", controller.verify);
 router.post("/logout", controller.logout);
 router.get("/profile", controller.profile);
+router.get("/getStats", controller.getStats);
 module.exports = router;
