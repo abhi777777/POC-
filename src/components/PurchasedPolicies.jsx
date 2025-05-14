@@ -37,6 +37,15 @@ export default function PurchasedPolicies() {
   const [search, setSearch] = useState("");
   const [sortOption, setSortOption] = useState("newest");
   const [page, setPage] = useState(1);
+  const colors = [
+    "#e3f2fd",
+    "#e8f5e9",
+    "#fff8e1",
+    "#f3e5f5",
+    "#ffebee",
+    "#e0f7fa",
+  ];
+  const bgColor = (i) => colors[i % colors.length];
 
   useEffect(() => {
     async function fetchMy() {
@@ -140,7 +149,18 @@ export default function PurchasedPolicies() {
               <Grid item xs={12} sm={6} md={4} key={p._id}>
                 <Card
                   elevation={3}
-                  sx={{ borderRadius: 3, cursor: "pointer" }}
+                  sx={{
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    borderRadius: 2,
+                    backgroundColor: "#e3f2fd",
+                    "&:hover": {
+                      transform: "translateY(-5px)",
+                      boxShadow: 8,
+                    },
+                    transition: "transform 0.3s, box-shadow 0.3s",
+                  }}
                   onClick={() => handleCardClick(p)}
                 >
                   <CardContent>
@@ -149,9 +169,7 @@ export default function PurchasedPolicies() {
                         <PolicyIcon />
                       </Avatar>
                       <Box>
-                        <Typography fontWeight={600}>
-                          {p.policy?.name || "Unnamed Policy"}
-                        </Typography>
+                        <Typography fontWeight={600}>Health Policy</Typography>
                         <Typography variant="body2" color="text.secondary">
                           ₹{p.policy?.coverageAmount} | {p.policy?.tenure} yrs
                         </Typography>
@@ -205,9 +223,6 @@ export default function PurchasedPolicies() {
                 {new Date(selectedPolicy.createdAt).toLocaleDateString("en-IN")}
               </Typography>
               <Box mt={2}>
-                <Typography>
-                  <strong>Name:</strong> {selectedPolicy.policy?.name || "N/A"}
-                </Typography>
                 <Typography>
                   <strong>Coverage Amount:</strong> ₹
                   {selectedPolicy.policy?.coverageAmount || "N/A"}

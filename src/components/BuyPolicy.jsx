@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import {
   Box,
   Grid,
@@ -30,84 +29,70 @@ import {
   MonetizationOn as MonetizationOnIcon,
 } from "@mui/icons-material";
 import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+
+// Redux
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchAvailablePolicies,
+  buyPolicy,
+} from "../Slices/availablePoliciesSlice";
 
 export default function AvailablePolicies() {
-  const [policies, setPolicies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [buying, setBuying] = useState(null);
-  const [page, setPage] = useState(1);
-  const pageSize = 6;
+  const dispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isMedium = useMediaQuery(theme.breakpoints.down("md"));
 
-  // Generate random pastel colors for cards
-  const generateRandomColor = (index) => {
-    const colors = [
-      "#e3f2fd", // light blue
-      "#e8f5e9", // light green
-      "#fff8e1", // light amber
-      "#f3e5f5", // light purple
-      "#ffebee", // light red
-      "#e0f7fa", // light cyan
-    ];
-    return colors[index % colors.length];
-  };
+  // paging and UI state
+  const [page, setPage] = useState(1);
+  const pageSize = 6;
 
+  // Redux state
+  const {
+    items: policies,
+    isLoading: loading,
+    error,
+    buyingId,
+  } = useSelector((state) => state.availablePolicies);
+
+  // Fetch on mount
   useEffect(() => {
-    const fetchPolicies = async () => {
-      try {
-        const res = await axios.get(
-          "http://localhost:4000/api/policy/getAvailablePolicies",
-          { withCredentials: true }
-        );
-        setPolicies(res.data.policies || []);
-      } catch (err) {
-        console.error(err);
-        toast.error("Failed to fetch policies");
-      } finally {
-        setLoading(false);
-      }
-    };
+    dispatch(fetchAvailablePolicies());
+  }, [dispatch]);
 
-    fetchPolicies();
-  }, []);
-
-  const handleBuyPolicy = async (policyId) => {
-    setBuying(policyId);
-    try {
-      const res = await axios.post(
-        "http://localhost:4000/api/policy/buy",
-        { policyId },
-        { withCredentials: true }
-      );
-      toast.success(res.data.message || "Policy purchased successfully!");
-      setPolicies((prev) => prev.filter((p) => p._id !== policyId));
-    } catch (err) {
-      console.error(err);
-      toast.error(err.response?.data?.error || "Failed to buy policy");
-    } finally {
-      setBuying(null);
-    }
+  const handleBuy = (id) => {
+    dispatch(buyPolicy(id))
+      .unwrap()
+      .then(() => {
+        toast.success("Policy purchased successfully!");
+      })
+      .catch((err) => {
+        toast.error(err || "Failed to buy policy");
+      });
   };
 
-  const handleChangePage = (event, value) => {
+  const handleChangePage = (_, value) => {
     setPage(value);
-    // Smooth scroll to top when page changes
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const paginatedPolicies = policies.slice(
-    (page - 1) * pageSize,
-    page * pageSize
-  );
+  const paginated = policies.slice((page - 1) * pageSize, page * pageSize);
+  const totalPages = Math.ceil(policies.length / pageSize);
+  const colors = [
+    "#e3f2fd",
+    "#e8f5e9",
+    "#fff8e1",
+    "#f3e5f5",
+    "#ffebee",
+    "#e0f7fa",
+  ];
+  const bgColor = (i) => colors[i % colors.length];
 
   return (
     <Box
       sx={{
         py: 4,
-        px: { xs: 2, sm: 3, md: 4 },
+        px: { xs: 2, sm: 3 },
         backgroundColor: "#f9fafc",
         minHeight: "100vh",
       }}
@@ -125,6 +110,7 @@ export default function AvailablePolicies() {
             overflow: "hidden",
           }}
         >
+          {/* header circles */}
           <Box
             sx={{
               position: "absolute",
@@ -149,13 +135,7 @@ export default function AvailablePolicies() {
               display: { xs: "none", md: "block" },
             }}
           />
-
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={2}
-            position="relative"
-          >
+          <Stack direction="row" alignItems="center" spacing={2}>
             <PolicyIcon sx={{ fontSize: 40 }} />
             <Box>
               <Typography variant="h4" fontWeight="bold" gutterBottom>
@@ -178,8 +158,12 @@ export default function AvailablePolicies() {
             >
               Loading available policies...
             </Typography>
-            <LinearProgress color="primary" />
+            <LinearProgress />
           </Box>
+        ) : error ? (
+          <Typography color="error" align="center" sx={{ mt: 4 }}>
+            {error}
+          </Typography>
         ) : policies.length === 0 ? (
           <Paper
             elevation={3}
@@ -199,12 +183,9 @@ export default function AvailablePolicies() {
         ) : (
           <>
             <Grid container spacing={3}>
-              {paginatedPolicies.map((policy, index) => (
+              {paginated.map((policy, idx) => (
                 <Grid item xs={12} sm={6} md={4} key={policy._id}>
-                  <Zoom
-                    in={true}
-                    style={{ transitionDelay: `${index * 100}ms` }}
-                  >
+                  <Zoom in style={{ transitionDelay: `${idx * 100}ms` }}>
                     <Card
                       elevation={3}
                       sx={{
@@ -212,13 +193,12 @@ export default function AvailablePolicies() {
                         display: "flex",
                         flexDirection: "column",
                         borderRadius: 2,
-                        backgroundColor: generateRandomColor(index),
-                        transition:
-                          "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+                        backgroundColor: bgColor(idx),
                         "&:hover": {
                           transform: "translateY(-5px)",
                           boxShadow: 8,
                         },
+                        transition: "transform 0.3s, box-shadow 0.3s",
                       }}
                     >
                       <CardContent sx={{ flexGrow: 1 }}>
@@ -226,13 +206,11 @@ export default function AvailablePolicies() {
                           sx={{
                             display: "flex",
                             justifyContent: "space-between",
-                            alignItems: "flex-start",
                             mb: 2,
                           }}
                         >
                           <Typography
                             variant="h5"
-                            component="div"
                             fontWeight="bold"
                             color="primary"
                           >
@@ -246,9 +224,7 @@ export default function AvailablePolicies() {
                             variant="outlined"
                           />
                         </Box>
-
                         <Divider sx={{ my: 2 }} />
-
                         <Stack spacing={2}>
                           <Box
                             sx={{
@@ -257,16 +233,11 @@ export default function AvailablePolicies() {
                               gap: 1,
                             }}
                           >
-                            <EmailIcon color="action" fontSize="small" />
-                            <Typography
-                              variant="body2"
-                              color="text.secondary"
-                              noWrap
-                            >
+                            <EmailIcon fontSize="small" color="action" />
+                            <Typography variant="body2" noWrap>
                               {policy.email}
                             </Typography>
                           </Box>
-
                           <Box
                             sx={{
                               display: "flex",
@@ -274,12 +245,11 @@ export default function AvailablePolicies() {
                               gap: 1,
                             }}
                           >
-                            <PhoneIcon color="action" fontSize="small" />
-                            <Typography variant="body2" color="text.secondary">
+                            <PhoneIcon fontSize="small" color="action" />
+                            <Typography variant="body2">
                               {policy.mobile}
                             </Typography>
                           </Box>
-
                           <Box
                             sx={{
                               display: "flex",
@@ -287,35 +257,23 @@ export default function AvailablePolicies() {
                               gap: 1,
                             }}
                           >
-                            <PaymentsIcon color="action" fontSize="small" />
-                            <Typography
-                              variant="body2"
-                              color="text.primary"
-                              fontWeight="medium"
-                            >
+                            <PaymentsIcon fontSize="small" color="action" />
+                            <Typography variant="body2" fontWeight="medium">
                               Premium: <strong>₹{policy.premium}</strong>
                             </Typography>
                           </Box>
                         </Stack>
                       </CardContent>
-
                       <CardActions sx={{ p: 2, pt: 0 }}>
                         <Button
                           variant="contained"
                           fullWidth
                           size="large"
-                          disabled={buying === policy._id}
-                          onClick={() => handleBuyPolicy(policy._id)}
-                          startIcon={
-                            buying !== policy._id && <MonetizationOnIcon />
-                          }
-                          sx={{
-                            borderRadius: 8,
-                            boxShadow: 2,
-                            py: 1,
-                          }}
+                          disabled={buyingId === policy._id}
+                          onClick={() => handleBuy(policy._id)}
+                          sx={{ borderRadius: 8, py: 1 }}
                         >
-                          {buying === policy._id ? (
+                          {buyingId === policy._id ? (
                             <CircularProgress size={24} color="inherit" />
                           ) : (
                             `Buy Now - ₹${policy.premium}`
@@ -327,10 +285,9 @@ export default function AvailablePolicies() {
                 </Grid>
               ))}
             </Grid>
-
             <Box mt={6} mb={3} display="flex" justifyContent="center">
               <Pagination
-                count={Math.ceil(policies.length / pageSize)}
+                count={totalPages}
                 page={page}
                 onChange={handleChangePage}
                 color="primary"

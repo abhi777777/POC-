@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import {
   Box,
   Typography,
@@ -24,36 +23,32 @@ import SearchIcon from "@mui/icons-material/Search";
 import SentimentDissatisfiedIcon from "@mui/icons-material/SentimentDissatisfied";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchPolicies } from "../Slices/policySlice";
 
 const POLICIES_PER_PAGE = 10;
 
 function PoliciesList() {
-  const [policies, setPolicies] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  // Local state for search, filter, and pagination
   const [searchQuery, setSearchQuery] = useState("");
   const [tenureFilter, setTenureFilter] = useState("");
   const [page, setPage] = useState(1);
 
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const navigate = useNavigate();
+  // Redux state
+  const {
+    items: policies,
+    isLoading: loading,
+    error,
+  } = useSelector((state) => state.policies);
 
   useEffect(() => {
-    async function fetchPolicies() {
-      try {
-        const res = await axios.get(
-          "http://localhost:4000/api/policy/Mypolicies",
-          { withCredentials: true }
-        );
-        setPolicies(res.data.policies);
-      } catch (err) {
-        console.error("Error fetching policies:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchPolicies();
-  }, []);
+    dispatch(fetchPolicies());
+  }, [dispatch]);
 
   const handleChangePage = (event, value) => {
     setPage(value);
@@ -158,6 +153,8 @@ function PoliciesList() {
             />
           ))}
         </Box>
+      ) : error ? (
+        <Typography color="error">Error: {error}</Typography>
       ) : filteredPolicies.length === 0 ? (
         <Box
           textAlign="center"
@@ -240,11 +237,11 @@ function PoliciesList() {
             gap={1}
           >
             <Typography variant="body2" color="text.secondary">
-              Showing {startIndex + 1}–{" "}
+              Showing {startIndex + 1}–
               {Math.min(
                 startIndex + POLICIES_PER_PAGE,
                 filteredPolicies.length
-              )}{" "}
+              )}
               of {filteredPolicies.length} policies
             </Typography>
             <Pagination

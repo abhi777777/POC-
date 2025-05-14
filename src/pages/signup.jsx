@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import { useDispatch } from "react-redux"; // Keep this import here
+import { signupUser } from "../Slices/userSlice";
 import {
   ThemeProvider,
   Box,
@@ -35,6 +37,7 @@ export default function Signup() {
 
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+  const dispatch = useDispatch(); // This should be inside the component
 
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const validateMobile = (mobile) => /^\d{10}$/.test(mobile);
@@ -64,46 +67,31 @@ export default function Signup() {
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
-    const newErrors = {};
+    const validationErrors = {};
     if (!formData.firstName.trim())
-      newErrors.firstName = "First name is required";
-    if (!formData.lastName.trim()) newErrors.lastName = "Last name is required";
+      validationErrors.firstName = "First name is required";
+    if (!formData.lastName.trim())
+      validationErrors.lastName = "Last name is required";
     if (!validateEmail(formData.email))
-      newErrors.email = "Enter a valid email address";
+      validationErrors.email = "Enter a valid email";
     if (!validateMobile(formData.mobile))
-      newErrors.mobile = "Mobile number must be 10 digits";
+      validationErrors.mobile = "Invalid mobile number";
     if (formData.password !== formData.confirmPassword)
-      newErrors.confirmPassword = "Passwords do not match";
+      validationErrors.confirmPassword = "Passwords do not match";
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       return;
     }
 
-    const fullName = `${formData.firstName} ${formData.middleName ? formData.middleName + " " : ""}${formData.lastName}`;
-
-    const payload = {
-      name: fullName.trim(),
-      email: formData.email,
-      mobile: formData.mobile,
-      dob: formData.dob,
-      address: formData.address,
-      role: formData.role,
-      password: formData.password,
-    };
-
-    try {
-      await axios.post("http://localhost:4000/api/users/register", payload);
-      toast.success("Signup successful!");
-      setTimeout(() => navigate("/login"), 2000);
-    } catch (err) {
-      const message =
-        err.response?.data?.error || "Something went wrong during signup";
-      toast.error(message);
-    }
+    dispatch(signupUser(formData)).then((res) => {
+      if (res.meta.requestStatus === "fulfilled") {
+        setTimeout(() => navigate("/login"), 1500);
+      }
+    });
   };
 
   const isValid =

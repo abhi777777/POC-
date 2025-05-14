@@ -15,6 +15,10 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import Theme from "../theme/Theme";
 import axios from "axios";
 
+// NEW: Redux
+import { useDispatch } from "react-redux";
+import { setUserInfo } from "../Slices/userSlice";
+
 export default function Login() {
   const [formData, setFormData] = useState({
     email: "",
@@ -23,6 +27,7 @@ export default function Login() {
   const [error, setError] = useState("");
 
   const navigate = useNavigate();
+  const dispatch = useDispatch(); // NEW
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -45,7 +50,9 @@ export default function Login() {
         }
       );
 
-      const { token, role } = res.data;
+      const { token, role, email } = res.data;
+
+      dispatch(setUserInfo({ token, role, email }));
 
       switch (role) {
         case "producer":

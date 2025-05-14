@@ -1,126 +1,196 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
   Paper,
-  Tabs,
-  Tab,
   Fade,
   IconButton,
-  useTheme,
+  useMediaQuery,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Avatar,
+  Button,
+  AppBar,
+  Toolbar,
+  Container,
+  CircularProgress,
+  Tooltip,
+  Slide,
+  Chip,
+  Zoom,
 } from "@mui/material";
-import { ListAlt, AddCircle, AccountCircle } from "@mui/icons-material";
+import {
+  ListAlt,
+  AddCircle,
+  Person,
+  Menu as MenuIcon,
+  ChevronLeft,
+  Logout as LogoutIcon,
+  Shield as ShieldIcon,
+} from "@mui/icons-material";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { useMediaQuery } from "@mui/material";
+import axios from "axios";
+import { ThemeProvider, createTheme, alpha } from "@mui/material/styles";
 
 import PoliciesList from "../../components/PoliciesList";
 import CreatePolicyForm from "../../components/CreatePolicyForm";
 import StatisticsCards from "../../components/StatisticsCards";
-import ProfileSidebar from "../../components/ProfileSidebar";
+
+import { fetchUserProfile } from "../../Slices/userSlice";
+import { fetchStats } from "../../Slices/statsSlice";
+
+// Improved theme with more refined visual aesthetics
+const customTheme = createTheme({
+  palette: {
+    primary: {
+      main: "#4361ee", // More modern blue
+      light: "#738efd",
+      dark: "#2c3ebb",
+      contrastText: "#fff",
+    },
+    secondary: {
+      main: "#7209b7", // Rich purple
+      light: "#9d4eda",
+      dark: "#560090",
+      contrastText: "#fff",
+    },
+    background: {
+      default: "#f8faff", // Softer background
+      paper: "#ffffff",
+    },
+    success: {
+      main: "#2ec4b6", // Teal
+      light: "#59d2c8",
+      dark: "#1a9e90",
+    },
+    info: {
+      main: "#3a86ff",
+      light: "#6ca7ff",
+      dark: "#2567cc",
+    },
+    warning: {
+      main: "#fb8500",
+      light: "#ff9f33",
+      dark: "#d67100",
+    },
+    error: {
+      main: "#e63946",
+      light: "#ed6671",
+      dark: "#bf1f2d",
+    },
+  },
+  typography: {
+    fontFamily: "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
+    h1: { fontWeight: 800 },
+    h2: { fontWeight: 800 },
+    h3: { fontWeight: 700 },
+    h4: { fontWeight: 700 },
+    h5: { fontWeight: 600 },
+    h6: { fontWeight: 600 },
+    subtitle1: { fontWeight: 500 },
+    subtitle2: { fontWeight: 500 },
+    button: {
+      textTransform: "none",
+      fontWeight: 600,
+    },
+  },
+  shape: {
+    borderRadius: 16,
+  },
+  shadows: [
+    "none",
+    "0px 2px 6px rgba(0,0,0,0.04)",
+    "0px 4px 12px rgba(0,0,0,0.04)",
+    "0px 8px 16px rgba(0,0,0,0.04)",
+    "0px 12px 24px rgba(0,0,0,0.05)",
+    ...Array(20).fill("0px 12px 32px rgba(0,0,0,0.07)"),
+  ],
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          padding: "10px 20px",
+          boxShadow: "none",
+        },
+        containedPrimary: {
+          background: "linear-gradient(45deg, #4361ee 30%, #738efd 90%)",
+        },
+        containedSecondary: {
+          background: "linear-gradient(45deg, #7209b7 30%, #9d4eda 90%)",
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 20,
+        },
+        elevation1: {
+          boxShadow: "0 4px 20px rgba(0,0,0,0.04)",
+        },
+        elevation2: {
+          boxShadow: "0 6px 24px rgba(0,0,0,0.06)",
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundImage: "none",
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          fontWeight: 500,
+        },
+      },
+    },
+  },
+});
+
+const drawerWidth = 280;
 
 export default function ProducerDashboard() {
-  const [value, setValue] = useState(0);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const [stats, setStats] = useState({
-    totalPolicies: 0,
-    policiesSold: 0,
-
-    revenue: "₹0",
-  });
-  const [statsLoading, setStatsLoading] = useState(true);
-  const [statsError, setStatsError] = useState(null);
-
-  useEffect(() => {
-    const fetchStatsData = async () => {
-      try {
-        setStatsLoading(true);
-        const response = await fetch(
-          "http://localhost:4000/api/users/getStats",
-          {
-            method: "GET",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to fetch statistics");
-        }
-
-        const data = await response.json();
-        setStats(data);
-        setStatsError(null);
-      } catch (error) {
-        console.error("Failed to fetch stats", error);
-        setStatsError("Could not load dashboard statistics.");
-      } finally {
-        setStatsLoading(false);
-      }
-    };
-
-    fetchStatsData();
-  }, []);
-
-  const theme = useTheme();
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const isMobile = useMediaQuery("(max-width:600px)");
+  const isMobile = useMediaQuery(customTheme.breakpoints.down("sm"));
 
-  // Fetch user profile data
+  const [value, setValue] = useState(0);
+  const [openDrawer, setOpenDrawer] = useState(!isMobile);
+  const [isCreatingPolicy, setIsCreatingPolicy] = useState(false);
+
+  // Redux selectors
+  const { userInfo } = useSelector((state) => state.user);
+  const { data: stats, isLoading: statsLoading } = useSelector(
+    (state) => state.stats
+  );
+
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(
-          "http://localhost:4000/api/users/profile",
-          {
-            method: "GET",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
+    dispatch(fetchUserProfile());
+    dispatch(fetchStats());
+  }, [dispatch]);
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to fetch profile");
-        }
+  useEffect(() => {
+    if (isMobile) {
+      setOpenDrawer(false);
+    } else {
+      setOpenDrawer(true && !isCreatingPolicy);
+    }
+  }, [isMobile, isCreatingPolicy]);
 
-        const data = await response.json();
-        setUserInfo(data);
-        setError(null);
-      } catch (error) {
-        console.error("Failed to fetch user data", error);
-        setError("Failed to load profile data. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, []);
-
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = (newValue) => {
+    // Simplified tab change without animation delay
     setValue(newValue);
+    setIsCreatingPolicy(newValue === 1);
   };
-
-  const handleProfileClick = () => {
-    setIsSidebarOpen(true);
-  };
-
-  const handleCloseSidebar = () => {
-    setIsSidebarOpen(false);
-  };
-
-  7;
 
   const handleLogout = async () => {
     try {
@@ -133,6 +203,10 @@ export default function ProducerDashboard() {
     } catch (err) {
       console.error("Logout failed:", err.response || err);
     }
+  };
+
+  const handleDrawerToggle = () => {
+    setOpenDrawer(!openDrawer);
   };
 
   const renderSectionTitle = () => {
@@ -157,123 +231,407 @@ export default function ProducerDashboard() {
     }
   };
 
-  return (
-    <Box
-      sx={{
-        p: { xs: 2, md: 3 },
-        minHeight: "100vh",
-        background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
-        position: "relative",
-      }}
-    >
-      {/* Header */}
-      <Paper
-        elevation={3}
+  const drawer = (
+    <>
+      <Box
         sx={{
-          p: { xs: 2, md: 3 },
-          mb: 3,
-          borderRadius: 2,
-          backgroundColor: "#fff",
-        }}
-      >
-        <Typography variant="h4" gutterBottom fontWeight={600}>
-          Hello Producer
-        </Typography>
-      </Paper>
-
-      {/* Stats Cards */}
-      <StatisticsCards statsData={stats} />
-
-      {/* Main Content */}
-      <Paper
-        elevation={3}
-        sx={{
-          borderRadius: 2,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          py: 4,
+          background: "linear-gradient(135deg, #2c3ebb 0%, #4361ee 100%)",
+          color: "primary.contrastText",
+          position: "relative",
           overflow: "hidden",
         }}
       >
-        <Tabs
-          value={value}
-          onChange={handleTabChange}
-          variant="fullWidth"
-          indicatorColor="primary"
-          textColor="primary"
-          aria-label="producer dashboard tabs"
+        {/* Decorative elements */}
+        <Box
           sx={{
-            backgroundColor: "#f5f5f5",
-            borderBottom: "1px solid #e0e0e0",
-            "& .MuiTab-root": {
-              py: 2,
-              fontWeight: 500,
-            },
-            "& .Mui-selected": {
-              fontWeight: 700,
-            },
-            "& .MuiTabs-indicator": {
-              height: 3,
+            position: "absolute",
+            top: -30,
+            right: -30,
+            width: 100,
+            height: 100,
+            borderRadius: "50%",
+            backgroundColor: alpha("#ffffff", 0.05),
+          }}
+        />
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: -20,
+            left: -20,
+            width: 80,
+            height: 80,
+            borderRadius: "50%",
+            backgroundColor: alpha("#ffffff", 0.05),
+          }}
+        />
+
+        <Avatar
+          sx={{
+            width: 84,
+            height: 84,
+            mb: 2,
+            bgcolor: "secondary.main",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+            border: "4px solid",
+            borderColor: alpha("#ffffff", 0.2),
+            fontSize: 32,
+          }}
+        >
+          {userInfo?.name ? (
+            userInfo.name.charAt(0).toUpperCase()
+          ) : (
+            <Person fontSize="large" />
+          )}
+        </Avatar>
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+          {userInfo?.name || "Producer"}
+        </Typography>
+        <Typography variant="body2" sx={{ opacity: 0.8, mb: 1.5 }}>
+          {userInfo?.email || "producer@example.com"}
+        </Typography>
+
+        <Chip
+          icon={<ShieldIcon sx={{ fontSize: 16 }} />}
+          label="Insurance Producer"
+          size="small"
+          sx={{
+            bgcolor: alpha("#ffffff", 0.12),
+            color: "white",
+            fontWeight: 500,
+            py: 0.5,
+            "& .MuiChip-icon": { color: "white" },
+          }}
+        />
+      </Box>
+
+      <Box sx={{ mt: 3, px: 2 }}>
+        <List>
+          <ListItem
+            button
+            selected={value === 0}
+            onClick={() => handleTabChange(0)}
+            sx={{
+              py: 1.5,
+              mb: 1.5,
+              borderRadius: 3,
+              "&.Mui-selected": {
+                backgroundColor: alpha(customTheme.palette.primary.main, 0.1),
+                "&:hover": {
+                  backgroundColor: alpha(
+                    customTheme.palette.primary.main,
+                    0.15
+                  ),
+                },
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  left: 0,
+                  top: "20%",
+                  height: "60%",
+                  width: 4,
+                  backgroundColor: "primary.main",
+                  borderRadius: "0 4px 4px 0",
+                },
+              },
+              "&:hover": {
+                backgroundColor: alpha(customTheme.palette.primary.main, 0.05),
+              },
+            }}
+          >
+            <ListItemIcon
+              sx={{
+                color: value === 0 ? "primary.main" : "text.secondary",
+                minWidth: 44,
+              }}
+            >
+              <ListAlt />
+            </ListItemIcon>
+            <ListItemText
+              primary="My Policies"
+              primaryTypographyProps={{
+                fontWeight: value === 0 ? 600 : 500,
+                color: value === 0 ? "primary.main" : "text.primary",
+              }}
+            />
+          </ListItem>
+          <ListItem
+            button
+            selected={value === 1}
+            onClick={() => handleTabChange(1)}
+            sx={{
+              py: 1.5,
+              mb: 1.5,
+              borderRadius: 3,
+              "&.Mui-selected": {
+                backgroundColor: alpha(customTheme.palette.primary.main, 0.1),
+                "&:hover": {
+                  backgroundColor: alpha(
+                    customTheme.palette.primary.main,
+                    0.15
+                  ),
+                },
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  left: 0,
+                  top: "20%",
+                  height: "60%",
+                  width: 4,
+                  backgroundColor: "primary.main",
+                  borderRadius: "0 4px 4px 0",
+                },
+              },
+              "&:hover": {
+                backgroundColor: alpha(customTheme.palette.primary.main, 0.05),
+              },
+            }}
+          >
+            <ListItemIcon
+              sx={{
+                color: value === 1 ? "primary.main" : "text.secondary",
+                minWidth: 44,
+              }}
+            >
+              <AddCircle />
+            </ListItemIcon>
+            <ListItemText
+              primary="Create Policy"
+              primaryTypographyProps={{
+                fontWeight: value === 1 ? 600 : 500,
+                color: value === 1 ? "primary.main" : "text.primary",
+              }}
+            />
+          </ListItem>
+        </List>
+      </Box>
+      <Box sx={{ flexGrow: 1 }} />
+      <Box sx={{ p: 3 }}>
+        <Button
+          variant="outlined"
+          color="primary"
+          fullWidth
+          startIcon={<LogoutIcon />}
+          onClick={handleLogout}
+          sx={{
+            py: 1.2,
+            borderRadius: 3,
+            borderWidth: 1.5,
+            boxShadow: "none",
+            "&:hover": {
+              borderWidth: 1.5,
+              backgroundColor: alpha(customTheme.palette.primary.main, 0.04),
+              boxShadow: "0 4px 12px rgba(67, 97, 238, 0.15)",
             },
           }}
         >
-          <Tab
-            icon={<ListAlt />}
-            label="My Policies"
-            aria-label="My Policies"
-            iconPosition="start"
-          />
-          <Tab
-            icon={<AddCircle />}
-            label="Create Policy"
-            aria-label="Create Policy"
-            iconPosition="start"
-          />
-        </Tabs>
+          Logout
+        </Button>
+      </Box>
+    </>
+  );
 
-        <Box sx={{ p: { xs: 2, md: 3 } }}>
-          <Typography
-            variant="h5"
-            gutterBottom
-            fontWeight={600}
-            color="primary"
-          >
-            {renderSectionTitle()}
-          </Typography>
-
-          <Fade in timeout={400}>
-            <Box>{renderView()}</Box>
-          </Fade>
-        </Box>
-      </Paper>
-
-      {/* Profile button */}
-      <IconButton
+  return (
+    <ThemeProvider theme={customTheme}>
+      <Box
         sx={{
-          position: "absolute",
-          top: 20,
-          right: 20,
-          backgroundColor: "#fff",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
-          width: 50,
-          height: 50,
-          "&:hover": {
-            backgroundColor: "#f5f5f5",
-          },
+          display: "flex",
+          minHeight: "100vh",
+          bgcolor: "background.default",
+          position: "relative",
+          overflow: "hidden",
         }}
-        aria-label="profile"
-        onClick={handleProfileClick}
       >
-        <AccountCircle fontSize="large" color="primary" />
-      </IconButton>
+        {/* Sidebar - Hidden when creating a policy */}
+        {!isCreatingPolicy && (
+          <Box
+            component="nav"
+            sx={{
+              width: { md: drawerWidth },
+              flexShrink: { md: 0 },
+            }}
+            aria-label="navigation drawer"
+          >
+            {/* Mobile drawer */}
+            <Drawer
+              variant="temporary"
+              open={isMobile && openDrawer}
+              onClose={handleDrawerToggle}
+              ModalProps={{
+                keepMounted: true,
+              }}
+              sx={{
+                display: { xs: "block", md: "none" },
+                "& .MuiDrawer-paper": {
+                  boxSizing: "border-box",
+                  width: drawerWidth,
+                  boxShadow: "4px 0 24px rgba(0,0,0,0.10)",
+                  border: "none",
+                },
+                "& .MuiBackdrop-root": {
+                  backdropFilter: "blur(2px)",
+                },
+              }}
+            >
+              {drawer}
+            </Drawer>
 
-      {/* Sidebar (Drawer) for profile */}
-      <ProfileSidebar
-        isOpen={isSidebarOpen}
-        onClose={handleCloseSidebar}
-        userInfo={userInfo}
-        loading={loading}
-        error={error}
-        onLogout={handleLogout}
-        isMobile={isMobile}
-      />
-    </Box>
+            {/* Desktop drawer */}
+            <Drawer
+              variant="permanent"
+              sx={{
+                display: { xs: "none", md: "block" },
+                "& .MuiDrawer-paper": {
+                  boxSizing: "border-box",
+                  width: drawerWidth,
+                  boxShadow: "4px 0 24px rgba(0,0,0,0.05)",
+                  border: "none",
+                  position: "relative",
+                },
+              }}
+              open
+            >
+              {drawer}
+            </Drawer>
+          </Box>
+        )}
+
+        {/* Main content */}
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            width: isCreatingPolicy
+              ? "100%"
+              : { md: `calc(100% - ${drawerWidth}px)` },
+            height: "100vh",
+            overflow: "auto",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* App Bar */}
+          <AppBar
+            position="sticky"
+            elevation={0}
+            sx={{
+              bgcolor: "background.paper",
+              borderBottom: "1px solid",
+              borderColor: alpha("#000", 0.06),
+              top: 0,
+              zIndex: (theme) => theme.zIndex.drawer - 1,
+            }}
+          >
+            <Toolbar sx={{ minHeight: { xs: 64, sm: 70 } }}>
+              {!isCreatingPolicy ? (
+                <>
+                  <IconButton
+                    color="primary"
+                    aria-label="open drawer"
+                    edge="start"
+                    onClick={handleDrawerToggle}
+                    sx={{
+                      mr: 2,
+                      display: { md: "none" },
+                      bgcolor: alpha(customTheme.palette.primary.main, 0.06),
+                      "&:hover": {
+                        bgcolor: alpha(customTheme.palette.primary.main, 0.12),
+                      },
+                    }}
+                  >
+                    <MenuIcon />
+                  </IconButton>
+                  <Typography
+                    variant="h5"
+                    component="div"
+                    sx={{ flexGrow: 1, fontWeight: 700, color: "text.primary" }}
+                  >
+                    {renderSectionTitle()}
+                  </Typography>
+                </>
+              ) : (
+                <>
+                  <Tooltip title="Back to Policies">
+                    <IconButton
+                      color="primary"
+                      aria-label="back to policies"
+                      edge="start"
+                      onClick={() => handleTabChange(0)}
+                      sx={{
+                        mr: 2,
+                        bgcolor: alpha(customTheme.palette.primary.main, 0.06),
+                        "&:hover": {
+                          bgcolor: alpha(
+                            customTheme.palette.primary.main,
+                            0.12
+                          ),
+                        },
+                      }}
+                    >
+                      <ChevronLeft />
+                    </IconButton>
+                  </Tooltip>
+                  <Typography
+                    variant="h5"
+                    component="div"
+                    sx={{ flexGrow: 1, fontWeight: 700, color: "text.primary" }}
+                  >
+                    Create a New Policy
+                  </Typography>
+                </>
+              )}
+            </Toolbar>
+          </AppBar>
+
+          {/* Content area */}
+          <Container
+            maxWidth="xl"
+            sx={{
+              py: { xs: 3, md: 4 },
+              px: { xs: 2, sm: 3, md: 4 },
+              flexGrow: 1,
+              overflowY: "visible",
+            }}
+          >
+            {/* Stats Cards - Only show on My Policies page */}
+            {!isCreatingPolicy && (
+              <Box>
+                {statsLoading ? (
+                  <Box
+                    sx={{ display: "flex", justifyContent: "center", my: 4 }}
+                  >
+                    <CircularProgress color="primary" size={40} thickness={4} />
+                  </Box>
+                ) : (
+                  <Box sx={{ mb: 4 }}>
+                    <StatisticsCards statsData={stats} />
+                  </Box>
+                )}
+              </Box>
+            )}
+
+            {/* Main Content */}
+            <Paper
+              elevation={0}
+              sx={{
+                overflow: "visible",
+                bgcolor: "background.paper",
+                height: "auto",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.04)",
+                border: "1px solid",
+                borderColor: alpha("#000", 0.05),
+              }}
+            >
+              <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+                <Box>{renderView()}</Box>
+              </Box>
+            </Paper>
+          </Container>
+        </Box>
+      </Box>
+    </ThemeProvider>
   );
 }

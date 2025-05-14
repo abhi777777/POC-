@@ -1,6 +1,4 @@
 import React, { useState } from "react";
-import { Formik, Form } from "formik";
-import * as Yup from "yup";
 import axios from "axios";
 import {
   Stepper,
@@ -17,6 +15,11 @@ import {
   CardContent,
   CardActions,
   Divider,
+  useTheme,
+  useMediaQuery,
+  MobileStepper,
+  StepContent,
+  Grid,
 } from "@mui/material";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
@@ -25,8 +28,12 @@ import ReplayIcon from "@mui/icons-material/Replay";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import LocalPrintshopOutlinedIcon from "@mui/icons-material/LocalPrintshopOutlined";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
+import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
+import { Formik, Form } from "formik";
+import * as Yup from "yup";
 
-// Import all step components
+// Import all step components (placeholder for your existing components)
 import StepOne from "./Components/StepOne";
 import StepTwo from "./Components/StepTwo";
 import StepThree from "./Components/StepThree";
@@ -60,7 +67,7 @@ const StepComponents = [
   StepEight,
 ];
 
-// Validation schemas for each step
+// Validation schemas for each step - keeping your existing validation schemas
 const validationSchemas = [
   // Step 1: Personal Details
   Yup.object({
@@ -225,24 +232,32 @@ const validationSchemas = [
     }),
   }),
 ];
+
+// Policy Confirmation Component
 const PolicyConfirmation = ({ formValues, onReset }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const handlePrint = () => {
     window.print();
   };
 
   const handleDownload = () => {
     const policyDetails = `
-
+Policy Details:
+--------------------------------------------------
 Name: ${formValues.firstName} ${formValues.lastName}
 Email: ${formValues.email}
-Coverage Amount: ${formValues.coverageAmount}
+Mobile: ${formValues.mobile}
+Coverage Amount: ₹${formValues.coverageAmount}
 Tenure: ${formValues.tenure} years
-    `;
+--------------------------------------------------
+`;
 
     const blob = new Blob([policyDetails], { type: "text/plain" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "policy_details.txt";
+    link.download = "policy_details.pdf";
     link.click();
   };
 
@@ -254,12 +269,20 @@ Tenure: ${formValues.tenure} years
         alignItems: "center",
         justifyContent: "center",
         height: "100%",
-        p: 3,
+        p: { xs: 2, sm: 3 },
       }}
     >
-      <CheckCircleOutlineIcon color="success" sx={{ fontSize: 100, mb: 2 }} />
+      <CheckCircleOutlineIcon
+        color="success"
+        sx={{ fontSize: { xs: 60, sm: 100 }, mb: 2 }}
+      />
 
-      <Typography variant="h4" gutterBottom>
+      <Typography
+        variant="h4"
+        align="center"
+        gutterBottom
+        sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
+      >
         Policy Created Successfully!
       </Typography>
 
@@ -277,22 +300,39 @@ Tenure: ${formValues.tenure} years
             Policy Details
           </Typography>
           <Divider sx={{ mb: 2 }} />
-          <Typography variant="body1">
-            <strong>Name:</strong> {formValues.firstName} {formValues.lastName}
-          </Typography>
-          <Typography variant="body1">
-            <strong>Coverage Amount:</strong> ₹{formValues.coverageAmount}
-          </Typography>
-          <Typography variant="body1">
-            <strong>Tenure:</strong> {formValues.tenure} years
-          </Typography>
+          <Grid container spacing={1}>
+            <Grid item xs={12}>
+              <Typography variant="body1">
+                <strong>Name:</strong> {formValues.firstName}{" "}
+                {formValues.lastName}
+              </Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="body1">
+                <strong>Email:</strong> {formValues.email}
+              </Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="body1">
+                <strong>Coverage Amount:</strong> ₹{formValues.coverageAmount}
+              </Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="body1">
+                <strong>Tenure:</strong> {formValues.tenure} years
+              </Typography>
+            </Grid>
+          </Grid>
         </CardContent>
         <Divider />
         <CardActions
           sx={{
             display: "flex",
-            justifyContent: "space-between",
+            flexDirection: isMobile ? "column" : "row",
+            justifyContent: isMobile ? "center" : "space-between",
+            alignItems: "center",
             p: 2,
+            gap: 2,
           }}
         >
           <Button
@@ -300,6 +340,7 @@ Tenure: ${formValues.tenure} years
             color="primary"
             startIcon={<LocalPrintshopOutlinedIcon />}
             onClick={handlePrint}
+            fullWidth={isMobile}
           >
             Print Policy
           </Button>
@@ -308,6 +349,7 @@ Tenure: ${formValues.tenure} years
             color="primary"
             startIcon={<FileDownloadOutlinedIcon />}
             onClick={handleDownload}
+            fullWidth={isMobile}
           >
             Download Details
           </Button>
@@ -332,6 +374,10 @@ const CreatePolicyForm = () => {
   const [completedSteps, setCompletedSteps] = useState({});
   const [submittedFormValues, setSubmittedFormValues] = useState(null);
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isTablet = useMediaQuery(theme.breakpoints.down("md"));
+
   const CurrentStep = StepComponents[activeStep];
   const isLastStep = activeStep === StepComponents.length - 1;
 
@@ -353,16 +399,60 @@ const CreatePolicyForm = () => {
     setSubmittedFormValues(null);
   };
 
+  // Mobile stepper component for small screens
+  const renderMobileStepper = () => (
+    <Box sx={{ display: { xs: "block", sm: "none" }, px: 2 }}>
+      <Stepper activeStep={activeStep} orientation="vertical" sx={{ mb: 2 }}>
+        {steps.map((label, index) => (
+          <Step key={label} completed={completedSteps[index] === true}>
+            <StepLabel>{label}</StepLabel>
+          </Step>
+        ))}
+      </Stepper>
+    </Box>
+  );
+
+  // Desktop/tablet stepper component
+  const renderDesktopStepper = () => (
+    <Stepper
+      activeStep={activeStep}
+      alternativeLabel={!isTablet}
+      orientation={isTablet ? "vertical" : "horizontal"}
+      sx={{ mb: 3, display: { xs: "none", sm: "flex" } }}
+    >
+      {steps.map((label, index) => (
+        <Step key={label} completed={completedSteps[index] === true}>
+          <StepLabel>{label}</StepLabel>
+          {isTablet && (
+            <StepContent>
+              <Typography variant="body2" color="text.secondary">
+                {`Step ${index + 1} of ${steps.length}: ${label}`}
+              </Typography>
+            </StepContent>
+          )}
+        </Step>
+      ))}
+    </Stepper>
+  );
+
   return (
     <Container
       maxWidth="lg"
       sx={{
-        height: "100vh",
+        minHeight: { xs: "100vh" },
         display: "flex",
         flexDirection: "column",
-        py: { xs: 2, sm: 4 },
+        py: { xs: 1, sm: 2, md: 4 },
+        px: { xs: 1, sm: 2 },
       }}
     >
+      {/* Current Step Indicator for Mobile */}
+      {isMobile && (
+        <Typography variant="h6" align="center" sx={{ my: 1, fontWeight: 500 }}>
+          {steps[activeStep]} ({activeStep + 1}/{steps.length})
+        </Typography>
+      )}
+
       <Paper
         elevation={3}
         sx={{
@@ -370,16 +460,12 @@ const CreatePolicyForm = () => {
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          p: { xs: 2, sm: 3 },
+          p: { xs: 1.5, sm: 2, md: 3 },
+          borderRadius: { xs: 1, sm: 2 },
         }}
       >
-        <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 3 }}>
-          {steps.map((label, index) => (
-            <Step key={label} completed={completedSteps[index] === true}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
+        {/* Stepper - Different display based on screen size */}
+        {isMobile ? renderMobileStepper() : renderDesktopStepper()}
 
         {submittedFormValues ? (
           <PolicyConfirmation
@@ -394,9 +480,10 @@ const CreatePolicyForm = () => {
               flexDirection: "column",
               justifyContent: "center",
               alignItems: "center",
+              p: { xs: 2, sm: 3 },
             }}
           >
-            <Typography variant="h5" sx={{ mb: 2 }}>
+            <Typography variant="h5" align="center" sx={{ mb: 2 }}>
               All steps completed - you&apos;re finished
             </Typography>
             <Button
@@ -516,6 +603,7 @@ const CreatePolicyForm = () => {
                     width: "100%",
                     display: "flex",
                     flexDirection: "column",
+                    p: { xs: 1, sm: 2 },
                   }}
                 >
                   <CurrentStep
@@ -528,44 +616,93 @@ const CreatePolicyForm = () => {
                   />
                 </Box>
 
+                {/* Progress indicator for mobile */}
+                {isMobile && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      mt: 1,
+                      mb: 2,
+                    }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      Step {activeStep + 1} of {steps.length}
+                    </Typography>
+                  </Box>
+                )}
+
                 <Stack
-                  direction="row"
+                  direction={isMobile ? "column" : "row"}
                   spacing={2}
                   sx={{
                     display: "flex",
-                    justifyContent: "space-between",
+                    justifyContent: isMobile ? "center" : "space-between",
                     mt: 3,
                     pt: 2,
                     borderTop: "1px solid rgba(0,0,0,0.12)",
                   }}
                 >
-                  <Tooltip title="Previous Step">
-                    <span>
+                  {isMobile ? (
+                    // Mobile layout - stacked buttons
+                    <>
                       <Button
                         color="primary"
-                        variant="outlined"
-                        disabled={activeStep === 0}
-                        onClick={handleBack}
-                        startIcon={<NavigateBeforeIcon />}
+                        variant="contained"
+                        fullWidth
+                        onClick={submitForm}
+                        disabled={isSubmitting || (dirty && !isValid)}
+                        endIcon={
+                          isLastStep ? <CheckIcon /> : <NavigateNextIcon />
+                        }
                       >
-                        Back
+                        {isLastStep ? "Finish" : "Next"}
                       </Button>
-                    </span>
-                  </Tooltip>
 
-                  <Tooltip title={isLastStep ? "Submit Form" : "Next Step"}>
-                    <Button
-                      color="primary"
-                      variant="contained"
-                      onClick={submitForm}
-                      disabled={isSubmitting || (dirty && !isValid)}
-                      endIcon={
-                        isLastStep ? <CheckIcon /> : <NavigateNextIcon />
-                      }
-                    >
-                      {isLastStep ? "Finish" : "Next"}
-                    </Button>
-                  </Tooltip>
+                      {activeStep > 0 && (
+                        <Button
+                          color="primary"
+                          variant="outlined"
+                          fullWidth
+                          onClick={handleBack}
+                          startIcon={<NavigateBeforeIcon />}
+                        >
+                          Back
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    // Desktop/Tablet layout - horizontal buttons
+                    <>
+                      <Tooltip title="Previous Step">
+                        <span>
+                          <Button
+                            color="primary"
+                            variant="outlined"
+                            disabled={activeStep === 0}
+                            onClick={handleBack}
+                            startIcon={<NavigateBeforeIcon />}
+                          >
+                            Back
+                          </Button>
+                        </span>
+                      </Tooltip>
+
+                      <Tooltip title={isLastStep ? "Submit Form" : "Next Step"}>
+                        <Button
+                          color="primary"
+                          variant="contained"
+                          onClick={submitForm}
+                          disabled={isSubmitting || (dirty && !isValid)}
+                          endIcon={
+                            isLastStep ? <CheckIcon /> : <NavigateNextIcon />
+                          }
+                        >
+                          {isLastStep ? "Finish" : "Next"}
+                        </Button>
+                      </Tooltip>
+                    </>
+                  )}
                 </Stack>
               </Form>
             )}

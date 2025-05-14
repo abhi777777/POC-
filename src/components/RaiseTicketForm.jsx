@@ -640,20 +640,11 @@ const RaiseTicketForm = () => {
 
               <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
                 <Button
-                  variant="outlined"
-                  color="primary"
-                  startIcon={<SupportIcon />}
-                  sx={{ borderRadius: 2 }}
-                >
-                  Contact Support
-                </Button>
-
-                <Button
                   variant="contained"
                   sx={{ borderRadius: 2 }}
                   onClick={() => (window.location.href = "/ConsumerDashBoard")}
                 >
-                  Return to Dashboard
+                  Return to Home
                 </Button>
               </Box>
             </Box>
@@ -700,7 +691,7 @@ const RaiseTicketForm = () => {
             fontWeight="bold"
             color="primary"
           >
-            Request Policy Update
+            Raise Ticket
           </Typography>
           <Divider sx={{ mb: 4 }} />
         </Box>
